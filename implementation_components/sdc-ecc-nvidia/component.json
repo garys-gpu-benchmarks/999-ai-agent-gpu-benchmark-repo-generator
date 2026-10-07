@@ -1,0 +1,29 @@
+{
+  "component_id": "sdc-ecc-nvidia",
+  "description": "NVIDIA 204/404 CUDA fixed-pattern fill on device memory. Fails if nvcc/CUDA walk does not run. Does not label host RAM as hbm3_coverage_gb.",
+  "overlay": [
+    "src/ecc_walk.cu",
+    "scripts/build.sh",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "Silent Data Corruption (SDC)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "closed",
+  "provides": [
+    "src/ecc_walk.cu",
+    "scripts/build.sh",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

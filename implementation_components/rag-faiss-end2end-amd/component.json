@@ -1,0 +1,33 @@
+{
+  "component_id": "rag-faiss-end2end-amd",
+  "description": "Real squad_v2 + FAISS + BGE + Mistral-7B RAG runner for AMD 132/332. Reuses ROCm torch; does not install a CUDA wheel.",
+  "overlay": [
+    "scripts/collect_workload.py",
+    "scripts/gpu-bench-rag-faiss-end2end.py",
+    "scripts/prefetch_rag_models.py",
+    "scripts/rag_model_paths.py",
+    "scripts/install_rag_amd.sh"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "RAG Pipeline Sweep"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "closed",
+  "provides": [
+    "scripts/collect_workload.py",
+    "scripts/gpu-bench-rag-faiss-end2end.py",
+    "scripts/prefetch_rag_models.py",
+    "scripts/rag_model_paths.py",
+    "scripts/install_rag_amd.sh"
+  ],
+  "does_not_provide": []
+}

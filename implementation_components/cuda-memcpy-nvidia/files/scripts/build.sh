@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# File: scripts/build.sh
+# Description: Compile overlay src/cuda_memcpy.cu into bin/cuda_memcpy.
+set -euo pipefail
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${REPO_ROOT}"
+export PATH="/usr/local/cuda/bin:/usr/local/cuda-13.3/bin:/usr/local/cuda-12.8/bin:/usr/local/cuda-12.6/bin:${PATH}"
+command -v nvcc >/dev/null || { echo "[FAIL] nvcc missing" >&2; exit 1; }
+# shellcheck disable=SC1091
+source "${REPO_ROOT}/scripts/lib/nvcc_glibc_throw.sh"
+nvcc_glibc_prepare
+mkdir -p bin
+echo "[RUN] nvcc -O2 -std=c++17 -o bin/cuda_memcpy src/cuda_memcpy.cu"
+nvcc -O2 -std=c++17 -o bin/cuda_memcpy src/cuda_memcpy.cu
+[[ -x bin/cuda_memcpy ]] || { echo "[FAIL] bin/cuda_memcpy missing" >&2; exit 1; }
+echo "[PASS] build.sh compiled bin/cuda_memcpy"

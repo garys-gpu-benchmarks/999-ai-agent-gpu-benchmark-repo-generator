@@ -1,0 +1,29 @@
+{
+  "component_id": "jax-xla-amd",
+  "description": "AMD 126/326 JAX XLA transformer forward pass. Uses the same gpu-bench-jax-xla-forwardpass.py and collect_jax_xla.py as jax-xla-nvidia; collect_workload.py adapts the harness arguments.",
+  "overlay": [
+    "scripts/gpu-bench-jax-xla-forwardpass.py",
+    "scripts/collect_jax_xla.py",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "JAX XLA Transformer Forward Pass"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/gpu-bench-jax-xla-forwardpass.py",
+    "scripts/collect_jax_xla.py",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

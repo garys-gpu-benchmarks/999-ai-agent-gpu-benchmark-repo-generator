@@ -1,0 +1,24 @@
+# File: config/machines.yaml
+# Description: Machine definitions for benchmark execution
+# Purpose: Centralized machine configuration for CI/CD and nightly benchmarks
+
+machines:
+  do-gpu-mi300x-1:
+    provider: DigitalOcean
+    instance_type: gpu-mi300x1-192gb
+    vcpus: 20
+    memory_gb: 240
+    storage_gb: 6270.7
+    storage_gb_root_disk: 720
+    storage_gb_extra_disk: 5000
+    storage_type: Virtio block devices; no /dev/nvme* devices detected
+    gpu_count: 1
+    gpu_model: MI300X
+    gpu_compute_units: 304
+    gpu_hbm_gb: 192
+    gpu_gfx: gfx942
+    os: Ubuntu 24.04
+    kernel: 6.8.0
+    rocm_version: 7.2.4
+    python_version: "3.12.3"
+    description: Default DigitalOcean MI300X VF test platform for generated workloads

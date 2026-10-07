@@ -1,0 +1,31 @@
+{
+  "component_id": "cudnn-convolution-nvidia",
+  "description": "cuDNN convolution source, nvcc build, and collector. Produces bin/cudnn_conv.",
+  "overlay": [
+    "scripts/collect_cudnn_conv.py",
+    "scripts/build.sh",
+    "src/cudnn_conv.cu",
+    "scripts/probe_setup.sh"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "cuDNN Convolution Microbenchmark"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "source",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_cudnn_conv.py",
+    "scripts/build.sh",
+    "src/cudnn_conv.cu",
+    "scripts/probe_setup.sh"
+  ],
+  "does_not_provide": []
+}

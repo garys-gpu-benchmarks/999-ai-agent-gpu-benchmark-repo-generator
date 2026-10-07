@@ -1,0 +1,41 @@
+# Official OS / GPU-vendor / driver policy. ROCm: at most one reboot after driver/firmware.
+# rocm_install_runtime reloads amdgpu first (scripts/lib/amdgpu_reload.sh) and reboots
+# only if the reload cannot be verified. reboots: is that upper bound.
+# NVIDIA host-injected drivers are accepted when /dev/nvidiactl is present.
+version: 1
+policies:
+  - id: amd-ubuntu-24.04
+    os: "24.04"
+    vendor: AMD
+    driver: rocm
+    reboots: 1
+    setup: scripts/lib/rocm_install_24_04.sh
+    notes: Reload amdgpu onto the DKMS driver; reboot once only if the reload fails. Do not reboot before the driver install.
+  - id: amd-ubuntu-26.04
+    os: "26.04"
+    vendor: AMD
+    driver: rocm
+    reboots: 1
+    setup: scripts/lib/rocm_install_26_04.sh
+    notes: Reload the in-tree amdgpu to load new firmware; reboot once only if the reload fails. Do not reboot before the driver install.
+  - id: nvidia-ubuntu-24.04
+    os: "24.04"
+    vendor: NVIDIA
+    driver: cuda
+    reboots: 0
+    setup: scripts/templates/setup_nvidia_skeleton.sh
+    notes: Host-injected NVIDIA driver is valid when nvidia-smi works. A userspace newer than the loaded module is pinned to that module. /dev/nvidiactl alone does not replace nvidia-smi.
+  - id: nvidia-ubuntu-26.04
+    os: "26.04"
+    vendor: NVIDIA
+    driver: cuda
+    reboots: 0
+    setup: scripts/templates/setup_nvidia_skeleton.sh
+    notes: Host-injected NVIDIA driver is valid when nvidia-smi works. A userspace newer than the loaded module is pinned to that module. /dev/nvidiactl alone does not replace nvidia-smi.
+  - id: cpu-system
+    os: "*"
+    vendor: CPU
+    driver: none
+    reboots: 0
+    setup: scripts/templates/setup_cpu_system_skeleton.sh
+    notes: CPU / System workloads do not install a GPU driver.

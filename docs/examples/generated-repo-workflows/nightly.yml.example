@@ -1,0 +1,30 @@
+name: GPU Smoke Benchmark
+
+# Manual-only by default. After attaching an appropriate self-hosted GPU runner,
+# repository owners may opt in to a schedule by adding a schedule trigger.
+on:
+  workflow_dispatch:
+
+jobs:
+  run-smoke:
+    runs-on: [self-hosted, gpu]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up benchmark environment
+        run: bash setup.sh --assume-yes
+
+      - name: Run smoke
+        run: bash run_benchmark.sh --smoke --validate
+        timeout-minutes: 30
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          path: |
+            results/summary.json
+            results/parsed/
+          retention-days: 90

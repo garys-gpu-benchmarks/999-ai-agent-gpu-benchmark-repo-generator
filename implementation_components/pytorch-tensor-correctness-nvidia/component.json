@@ -1,0 +1,31 @@
+{
+  "component_id": "pytorch-tensor-correctness-nvidia",
+  "description": "Reusable implementation assets for pytorch tensor correctness nvidia.",
+  "overlay": [
+    "config/benchmark_config.yaml",
+    "scripts/collect_tensor_ops.py",
+    "scripts/collect_workload.py",
+    "scripts/probe_setup.sh"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "PyTorch Tensor Op Correctness Suite"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "config/benchmark_config.yaml",
+    "scripts/collect_tensor_ops.py",
+    "scripts/collect_workload.py",
+    "scripts/probe_setup.sh"
+  ],
+  "does_not_provide": []
+}

@@ -1,0 +1,7 @@
+# Locked overlay fixture. generate_benchmark_config.py must merge sweep, not replace this file.
+overlay_marker: keep-me
+sweep:
+  profile:
+    smoke: 1
+thresholds:
+  min_samples: 2

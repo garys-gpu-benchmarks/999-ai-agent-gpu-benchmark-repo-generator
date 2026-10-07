@@ -1,0 +1,33 @@
+[project]
+name = "ai-agent-gpu-benchmark-repo-generator"
+version = "0.9.0"
+description = "Template-driven generator for standardized GPU benchmark repositories"
+readme = { text = "AI-driven GPU benchmark repository generator tooling configuration.", content-type = "text/plain" }
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Gary Bass" }]
+dependencies = [
+    "jsonschema",
+    "openpyxl",
+    "PyYAML",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

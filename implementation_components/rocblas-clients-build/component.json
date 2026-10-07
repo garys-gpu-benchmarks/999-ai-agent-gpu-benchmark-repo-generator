@@ -1,0 +1,24 @@
+{
+  "component_id": "rocblas-clients-build",
+  "description": "Mixin: compile rocblas-bench via the protected function and export the staging PATH.",
+  "role": "mixin",
+  "completeness": "thin",
+  "apply_when": {
+    "compile_rocblas_bench": true,
+    "missing_overlay": "scripts/build.sh"
+  },
+  "provides": [
+    "scripts/build.sh"
+  ],
+  "does_not_provide": [
+    "scripts/collect_workload.py",
+    "rocblas-bench invocation"
+  ],
+  "verifies": [
+    "rocblas-bench"
+  ],
+  "overlay": [
+    "scripts/build.sh"
+  ],
+  "selectors": []
+}

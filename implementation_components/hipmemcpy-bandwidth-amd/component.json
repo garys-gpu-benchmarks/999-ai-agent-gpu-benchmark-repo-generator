@@ -1,0 +1,31 @@
+{
+  "component_id": "hipmemcpy-bandwidth-amd",
+  "description": "hipcc build for hipMemcpy H2D/D2H/D2D. Sources hipcc_host_gcc.sh so Ubuntu 26.04 Clang 23 finds <cstdlib>.",
+  "overlay": [
+    "src/hip_memcpy_bw.cpp",
+    "scripts/build.sh",
+    "scripts/collect_workload.py",
+    "scripts/parse_results.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "hipMemcpy Bandwidth Test (H2D, D2H, D2D)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "closed",
+  "provides": [
+    "src/hip_memcpy_bw.cpp",
+    "scripts/build.sh",
+    "scripts/collect_workload.py",
+    "scripts/parse_results.py"
+  ],
+  "does_not_provide": []
+}

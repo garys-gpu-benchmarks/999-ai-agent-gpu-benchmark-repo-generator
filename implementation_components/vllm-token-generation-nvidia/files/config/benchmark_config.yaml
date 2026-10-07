@@ -1,0 +1,31 @@
+# Generated from BenchmarkSpecDefinitions.xlsx::Parameters_SmokeBaselineExtend
+sweep:
+  profile: baseline
+  model_name: mistralai/Mistral-7B-v0.3
+  dtype: bfloat16
+  tensor_parallel_size: 1
+  gpu_memory_utilization: 0.9
+  prompt_source: synthetic
+  input_len:
+    smoke: 64
+    baseline: 512
+    extended: 1024
+  output_len:
+    smoke: 16
+    baseline: 16000
+    extended: 24000
+  max_num_seqs:
+    smoke: 2
+    baseline: 8
+    extended: 8
+  max_concurrency:
+    smoke: 2
+    baseline: 8
+    extended: 8
+  request_rate: true
+thresholds:
+  generated_token_rate_tokens_s_min: 0.0
+  time_per_output_token_tpot_ms_token_min: 0.0
+  ttft_ms_min: 0.0
+  inter_token_latency_itl_ms_min: 0.0
+  total_request_completion_time_ms_min: 0.0

@@ -1,0 +1,31 @@
+{
+  "component_id": "babelstream-hbm-amd",
+  "description": "hipcc build for BabelStream HBM. Sources hipcc_host_gcc.sh so Ubuntu 26.04 Clang 23 finds <cstdlib>.",
+  "overlay": [
+    "src/hip_stream.cpp",
+    "scripts/build.sh",
+    "scripts/collect_workload.py",
+    "scripts/parse_results.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "BabelStream HBM Bandwidth"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "closed",
+  "provides": [
+    "src/hip_stream.cpp",
+    "scripts/build.sh",
+    "scripts/collect_workload.py",
+    "scripts/parse_results.py"
+  ],
+  "does_not_provide": []
+}

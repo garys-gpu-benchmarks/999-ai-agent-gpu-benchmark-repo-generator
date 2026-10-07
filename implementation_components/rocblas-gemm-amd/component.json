@@ -1,0 +1,40 @@
+{
+  "component_id": "rocblas-gemm-amd",
+  "description": "AMD rocBLAS GEMM microbenchmark collector: runs the repository-local rocblas-bench (built by the rocblas-clients-build mixin) for the yaml GEMM shape. This is a GEMM sweep, not system stress.",
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": [
+    "scripts/build.sh"
+  ],
+  "verifies": [
+    "rocblas-bench"
+  ],
+  "contracts": {
+    "skip_rvs_default": 1,
+    "compile_rocblas_bench": true,
+    "gemm_per_point": true,
+    "build_policy": "compile_rocblas"
+  },
+  "also_applies_to": [
+    "117",
+    "317"
+  ],
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "GEMM / rocBLAS Microbenchmark"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ]
+}

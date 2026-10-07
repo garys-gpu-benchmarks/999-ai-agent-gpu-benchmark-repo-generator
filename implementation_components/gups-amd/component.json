@@ -1,0 +1,25 @@
+{
+  "component_id": "gups-amd",
+  "description": "AMD 113/313 GUPS collector with a native OpenMP kernel and LLC-specific L3 miss-rate counters.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "GUPS Random Memory"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

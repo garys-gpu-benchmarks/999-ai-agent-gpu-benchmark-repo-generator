@@ -1,0 +1,29 @@
+{
+  "component_id": "nccl-bandwidth-nvidia",
+  "description": "NVIDIA 216/416 NCCL collectives via libnccl. Fails if nccl.h/libnccl are missing. Does not label cudaMemcpy as nccl_bandwidth.",
+  "overlay": [
+    "src/nccl_bw.cu",
+    "scripts/build.sh",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "NCCL Bandwidth Test"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "closed",
+  "provides": [
+    "src/nccl_bw.cu",
+    "scripts/build.sh",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

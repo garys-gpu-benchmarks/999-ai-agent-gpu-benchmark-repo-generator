@@ -1,0 +1,129 @@
+name: Template CI
+
+# Validates this template repository itself — not a generated workload repo.
+# See docs/examples/generated-repo-workflows/ for CI meant to run inside
+# repositories produced by scripts/create_generated_repo.py.
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install project and linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          pip install --upgrade pip
+          pip install -e "config[dev]"
+
+      - name: Lint shell scripts
+        run: |
+          find scripts -name "*.sh" -type f -print0 | xargs -0 shellcheck
+
+      - name: Lint Python scripts
+        run: |
+          ruff check --config config/pyproject.toml scripts/*.py
+
+      - name: Validate JSON schemas
+        run: |
+          python3 -c "import json; json.load(open('schemas/benchmark_specification.schema.json'))"
+          python3 -c "import json; json.load(open('schemas/generation_report.schema.json'))"
+          python3 -c "import json; json.load(open('schemas/batch_generation_report.schema.json'))"
+          python3 -c "import json; json.load(open('implementation_components/component.schema.json'))"
+
+      - name: Validate implementation component manifests
+        run: |
+          python3 scripts/resolve_implementation_components.py --validate-manifests
+
+      - name: Validate template contracts
+        run: |
+          python3 scripts/validate_template_inputs.py \
+            --benchmark-specification benchmark_specification.json \
+            --benchmark-schema schemas/benchmark_specification.schema.json \
+            --allow-missing-benchmark-specification
+          python3 scripts/validate_template_inputs.py \
+            --generation-manifest results/generation_manifest.json \
+            --generation-schema schemas/generation_report.schema.json \
+            --allow-missing-generation-manifest
+
+      - name: Verify template repository structure
+        run: |
+          test -f AGENTS.md
+          test -f .claude/CLAUDE.md
+          test ! -f CLAUDE.md
+          test -f .github/copilot-instructions.md
+          test -f templates/README_TEMPLATE.md
+          test -f templates/PRD_TEMPLATE.md
+          test -f templates/SPEC_TEMPLATE.md
+          test -f docs/SUBMISSION_CHECKLIST.md
+          test -f README.md
+          test -f docs/AI_AGENT_INSTRUCTIONS.md
+          test -f .github/SECURITY.md
+          test ! -f pyproject.toml
+          test -f config/pyproject.toml
+          test -f BenchmarkSpecDefinitions.xlsx
+          test -d docs
+          test -d schemas
+          test -d scripts
+          test -d implementation_components
+          test -f legal/NOTICE
+          test -f docs/GITHUB_PUBLISH_WORKLOAD_REPO.md
+          test -f docs/GITHUB_PUBLISH_GENERATOR_OPERATIONS.md
+          test -f docs/examples/generated-repo-github/GITHUB_PUBLISH_WORKLOAD_REPO.md
+          test ! -f docs/GITHUB_PUBLISH.md
+          test ! -f docs/GITHUB_WORKLOAD_PUBLISH.md
+          test ! -f docs/examples/generated-repo-github/GITHUB_PUBLISH.md
+          test -f docs/SIBLING_WORKLOAD_NOTES.md
+          test -f implementation_components/README.md
+          test -f implementation_components/stream-reference/component.json
+          test -f implementation_components/sdxl-diffusers-amd/component.json
+          test -f implementation_components/sglang-serving-nvidia/component.json
+          test -f implementation_components/vllm-throughput-amd/component.json
+          test -f implementation_components/vllm-token-generation-amd/component.json
+          test -f implementation_components/sglang-prompt-response-amd/component.json
+          test -f implementation_components/sglang-serving-amd/component.json
+          test -f implementation_components/rag-faiss-end2end-nvidia/component.json
+          test -f implementation_components/rag-faiss-end2end-amd/component.json
+          test -f implementation_components/vllm-kvcache-amd/component.json
+          test -f implementation_components/hipmemcpy-bandwidth-amd/component.json
+          test -f implementation_components/babelstream-hbm-amd/component.json
+          test -f implementation_components/rccl-bandwidth-amd/component.json
+          test -f implementation_components/linpack-rochpl-amd/component.json
+          test -f docs/nvidia-sglang-install-contract.md
+          echo "✓ All required template files and directories present"
+
+      - name: Check for leftover personal paths, secrets, or lock files
+        run: |
+          if grep -Fq 'Licensor shall mean AMD, Inc.' LICENSE || grep -Fq 'Advanced Micro Devices, Inc.' LICENSE; then
+            echo "✗ LICENSE still claims AMD ownership — replace with the real copyright holder." >&2
+            exit 1
+          fi
+          if grep -rEq "/Users/[a-zA-Z0-9_]+/\.ssh|C:\\\\Users\\\\[a-zA-Z0-9_]+\\\\\.ssh" --include="*.md" --include="*.sh" --include="*.py" .; then
+            echo "✗ Found a personal SSH path — replace with a placeholder before merging." >&2
+            exit 1
+          fi
+          if grep -rEq --include="*.md" --include="*.sh" --include="*.py" --include="*.txt" --include="*.yml" "-----BEGIN OPENSSH PRIVATE KEY-----|129\\.212\\.180\\.31|205\\.196\\.17\\.122"; then
+            echo "✗ Found a private key or a live lab IP — replace with a placeholder before merging." >&2
+            exit 1
+          fi
+          if find . -name '~$*' -o -name '__pycache__' | grep -q .; then
+            echo "✗ Found leftover Office lock files or __pycache__ — remove before merging." >&2
+            exit 1
+          fi
+          echo "✓ No leftover personal paths or junk files"

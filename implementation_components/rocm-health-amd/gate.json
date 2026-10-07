@@ -1,0 +1,25 @@
+{
+  "component_id": "rocm-health-amd",
+  "skip_rvs_default": 0,
+  "smoke_duration_seconds": 5,
+  "forbidden_cli": [],
+  "thresholds": {
+    "dmesg_gpu_fault_count_min": 0,
+    "dmesg_gpu_fault_count_max": 0,
+    "gpu_temperature_c_min": 0,
+    "gpu_temperature_c_max": 110,
+    "hsa_agents_visible_count_min": 1,
+    "pcie_link_width_lanes_min": 1,
+    "pcie_link_speed_gt_s_min": 1
+  },
+  "overlay_immutable": [
+    "scripts/collect_workload.py"
+  ],
+  "agent_may_edit": [
+    "PRD.md",
+    "SPEC.md",
+    "README.md",
+    "requirements.txt",
+    "config/benchmark_config.yaml"
+  ]
+}

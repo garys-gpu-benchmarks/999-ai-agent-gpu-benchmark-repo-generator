@@ -1,0 +1,31 @@
+{
+  "component_id": "system-stress-amd",
+  "skip_rvs_default": 1,
+  "smoke_duration_seconds": 5,
+  "forbidden_cli": [],
+  "compile_rocblas_bench": true,
+  "gemm_per_point": false,
+  "binary_path_notes": "rocblas-bench lives at <repo>/third_party/rocBLAS/build/release/clients/staging/rocblas-bench, not /opt/rocm/bin or ~/rocBLAS.",
+  "thresholds": {
+    "peak_cpu_temp_c_min": 0,
+    "peak_cpu_temp_c_max": 75,
+    "peak_gpu_junction_temp_c_min": 0,
+    "peak_gpu_junction_temp_c_max": 75,
+    "sustained_gpu_power_w_min": 0,
+    "sustained_gpu_power_w_max": 500,
+    "thermal_throttle_event_count_min": 0,
+    "thermal_throttle_event_count_max": 0,
+    "gpu_system_ecc_error_count_min": 0,
+    "gpu_system_ecc_error_count_max": 0
+  },
+  "overlay_immutable": [
+    "scripts/collect_workload.py"
+  ],
+  "agent_may_edit": [
+    "PRD.md",
+    "SPEC.md",
+    "README.md",
+    "requirements.txt",
+    "config/benchmark_config.yaml"
+  ]
+}

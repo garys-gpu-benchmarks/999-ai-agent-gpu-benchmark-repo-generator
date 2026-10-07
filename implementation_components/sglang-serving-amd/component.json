@@ -1,0 +1,39 @@
+{
+  "component_id": "sglang-serving-amd",
+  "description": "Reusable implementation assets for sglang serving amd.",
+  "overlay": [
+    "run_benchmark.sh",
+    "scripts/bench_serving.py",
+    "scripts/parse_results.py",
+    "scripts/ensure_setup.sh",
+    "scripts/tiny_sglang_server.py",
+    "scripts/patch_aiter_gfx1250_optional.py",
+    "scripts/patch_triton_gluon_gfx1250_optional.py",
+    "scripts/prefetch_sglang_model.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "SGLang Serving Latency Benchmark"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "run_benchmark.sh",
+    "scripts/bench_serving.py",
+    "scripts/parse_results.py",
+    "scripts/ensure_setup.sh",
+    "scripts/tiny_sglang_server.py",
+    "scripts/patch_aiter_gfx1250_optional.py",
+    "scripts/patch_triton_gluon_gfx1250_optional.py",
+    "scripts/prefetch_sglang_model.py"
+  ],
+  "does_not_provide": []
+}

@@ -1,0 +1,29 @@
+{
+  "component_id": "vllm-kvcache-amd",
+  "description": "AMD KV-cache stress runner using real vLLM in every profile, wall-clock concurrent decode throughput, and required occupancy telemetry.",
+  "overlay": [
+    "run_benchmark.sh",
+    "scripts/benchmark_serving.py",
+    "scripts/tiny_kv_server.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "KV Cache Stress Test"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "run_benchmark.sh",
+    "scripts/benchmark_serving.py",
+    "scripts/tiny_kv_server.py"
+  ],
+  "does_not_provide": []
+}

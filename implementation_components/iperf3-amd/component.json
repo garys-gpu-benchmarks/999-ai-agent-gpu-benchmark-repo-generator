@@ -1,0 +1,25 @@
+{
+  "component_id": "iperf3-amd",
+  "description": "AMD 108 iPerf3 TCP/UDP localhost collector. UDP uses a positive rate floor, not -b 0.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "iPerf3 TCP/UDP Sweep"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

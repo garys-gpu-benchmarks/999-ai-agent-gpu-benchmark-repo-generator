@@ -1,0 +1,25 @@
+{
+  "component_id": "stream-collect-nvidia",
+  "description": "NVIDIA STREAM collector. Parses STREAM Copy/Scale/Add/Triad. Does not invent a bandwidth when the tool output has no rate.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "STREAM - CPU (Copy/Scale/Add/Triad)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

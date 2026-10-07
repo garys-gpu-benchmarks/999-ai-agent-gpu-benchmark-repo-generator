@@ -1,0 +1,569 @@
+================================================================================
+TITLE       : Workload Inventory Run - Errors
+FILE        : errors_info.txt
+HOST        : gpu-mi300x-example-host
+VENDOR      : AMD (MI300X detected via PCI)
+--------------------------------------------------------------------------------
+Thu Aug 13 17:01:47 UTC 2026
+================================================================================
+
+================================================================================
+DESCRIPTION : Failed Commands
+--------------------------------------------------------------------------------
+Only commands returning a non-zero exit status are listed below.
+================================================================================
+
+================================================================================
+DESCRIPTION : CPU Details (long)
+DOMAIN      : hardware
+COMMAND     : cat /proc/cpuinfo | head -19
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 141)
+--------------------------------------------------------------------------------
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 207
+model name	: INTEL(R) XEON(R) PLATINUM 8568Y+
+stepping	: 2
+microcode	: 0x210002b3
+cpu MHz		: 2300.000
+cache size	: 4096 KB
+physical id	: 0
+siblings	: 20
+core id		: 0
+cpu cores	: 20
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 32
+wp		: yes
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Architecture IDs (gfx)
+DOMAIN      : hardware
+COMMAND     : rocminfo | grep gfx
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: rocminfo: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Details (Model, VRAM)
+DOMAIN      : hardware
+COMMAND     : rocm-smi --showmeminfo vram
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocm-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Product SKU and Identification
+DOMAIN      : hardware
+COMMAND     : rocm-smi --showproductname
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocm-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Live Telemetry (Temp, Power, Clocks)
+DOMAIN      : hardware
+COMMAND     : rocm-smi
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocm-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Hardware Identity
+DOMAIN      : hardware
+COMMAND     : amd-smi static | head -30
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: amd-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU/CPU Agent Names (ROCm Info)
+DOMAIN      : hardware
+COMMAND     : rocminfo | grep Name
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: rocminfo: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Overview and Status
+DOMAIN      : hardware
+COMMAND     : amd-smi
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: amd-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Kernel Boot Log - AMD/GPU Messages
+DOMAIN      : hardware
+COMMAND     : dmesg | grep -Ei 'amdgpu|xgmi|kfd|rocm'
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+================================================================================
+
+================================================================================
+DESCRIPTION : Kernel Modules (DKMS) Version
+DOMAIN      : software
+COMMAND     : dkms --version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: dkms: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Kernel Modules (DKMS) Status
+DOMAIN      : software
+COMMAND     : dkms status
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: dkms: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : PyTorch Version (generic)
+DOMAIN      : software
+COMMAND     : python3 -c "import torch; print(torch.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'torch'
+================================================================================
+
+================================================================================
+DESCRIPTION : TorchVision version
+DOMAIN      : software
+COMMAND     : python3 -c "import torchvision; print(torchvision.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'torchvision'
+================================================================================
+
+================================================================================
+DESCRIPTION : TorchBench package info
+DOMAIN      : software
+COMMAND     : python3 -m pip show torchbench | grep -E '^Name:|^Version:|^Summary:'
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+/usr/bin/python3: No module named pip
+================================================================================
+
+================================================================================
+DESCRIPTION : Pytest version
+DOMAIN      : software
+COMMAND     : pytest --version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: pytest: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Triton compiler version
+DOMAIN      : software
+COMMAND     : python3 -c "import triton; print(triton.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'triton'
+================================================================================
+
+================================================================================
+DESCRIPTION : Clang compiler version
+DOMAIN      : software
+COMMAND     : clang --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: clang: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : GCC compiler version
+DOMAIN      : software
+COMMAND     : gcc --version  | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: gcc: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : G++ compiler version
+DOMAIN      : software
+COMMAND     : g++ --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: g++: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : CMake version
+DOMAIN      : software
+COMMAND     : cmake --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: cmake: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Make utility version
+DOMAIN      : software
+COMMAND     : make --version | head -2
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: make: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : MPI runtime (mpirun) version
+DOMAIN      : software
+COMMAND     : mpirun --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: mpirun: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : FIO benchmark version
+DOMAIN      : software
+COMMAND     : fio --version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: fio: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : NVMe CLI version
+DOMAIN      : software
+COMMAND     : nvme version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: nvme: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : SGLang version
+DOMAIN      : software
+COMMAND     : python3 -c "import sglang; print(sglang.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'sglang'
+================================================================================
+
+================================================================================
+DESCRIPTION : iPerf3 version
+DOMAIN      : software
+COMMAND     : iperf3 --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: iperf3: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : vLLM version
+DOMAIN      : software
+COMMAND     : python3 -c "import vllm; print(vllm.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'vllm'
+================================================================================
+
+================================================================================
+DESCRIPTION : JAX version
+DOMAIN      : software
+COMMAND     : python3 -c "import jax; print(jax.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'jax'
+================================================================================
+
+================================================================================
+DESCRIPTION : JAXlib version
+DOMAIN      : software
+COMMAND     : python3 -c "import jaxlib; print(jaxlib.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'jaxlib'
+================================================================================
+
+================================================================================
+DESCRIPTION : FAISS version
+DOMAIN      : software
+COMMAND     : python3 -c "import faiss; print(faiss.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'faiss'
+================================================================================
+
+================================================================================
+DESCRIPTION : Diffusers library version
+DOMAIN      : software
+COMMAND     : python3 -c "import diffusers; print(diffusers.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'diffusers'
+================================================================================
+
+================================================================================
+DESCRIPTION : lmbench package version
+DOMAIN      : software
+COMMAND     : dpkg -l | grep -i lmbench
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+================================================================================
+
+================================================================================
+DESCRIPTION : OpenMP version
+DOMAIN      : software
+COMMAND     : gcc -fopenmp -dM -E - < /dev/null | grep _OPENMP
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: gcc: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : LlamaIndex version
+DOMAIN      : software
+COMMAND     : pip show llama-index | grep Version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: pip: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Mistral model revision
+DOMAIN      : software
+COMMAND     : huggingface-cli scan-cache | grep -i mistra
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: huggingface-cli: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : SQLite version
+DOMAIN      : software
+COMMAND     : sqlite3 --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: sqlite3: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : stress-ng version
+DOMAIN      : software
+COMMAND     : stress-ng --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: stress-ng: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Installed ROCm version
+DOMAIN      : software
+COMMAND     : dpkg-query -W rocm-core
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching rocm-core
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD SMI Tool & Library Versions
+DOMAIN      : software
+COMMAND     : amd-smi version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: amd-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD HIP Compiler Version
+DOMAIN      : software
+COMMAND     : hipcc --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: hipcc: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD PyTorch HIP Version (AMD GPU)
+DOMAIN      : software
+COMMAND     : python3 -c "import torch; print(torch.version.hip)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'torch'
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD MIOpen HIP version
+DOMAIN      : software
+COMMAND     : dpkg-query -W miopen-hip
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching miopen-hip
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD ROCm SMI version
+DOMAIN      : software
+COMMAND     : rocm-smi --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocm-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD RCCL version
+DOMAIN      : software
+COMMAND     : dpkg-query -W rccl
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching rccl
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Installed rocBLAS version
+DOMAIN      : software
+COMMAND     : dpkg-query -W rocblas
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching rocblas
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD rocSOLVER version
+DOMAIN      : software
+COMMAND     : dpkg-query -W rocsolver
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching rocsolver
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD rocHPL version
+DOMAIN      : software
+COMMAND     : rochpl --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rochpl: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Installed ROCm & AMD Packages List
+DOMAIN      : software
+COMMAND     : dpkg -l | egrep -i '^(ii)\s+(amdgpu-install |amd-smi-lib |hipblas |hipblaslt |hipcc |hipfft |hiprand |hip-runtime-amd |hipsolver |hipsparse |hiptensor |hsa-rocr |libgl1-amdgpu-mesa-dri:amd64 |llvm-amdgpu |miopen-hip |opencl-rocm |rccl |rocblas |rocblaslt |rocfft |rocm-core |rocm-llvm |rocm-validation-suite |rocprim-dev |rocprofiler |rocrand |rocsolver |rocsparse |rocthrust-dev |rocwmma-dev )'
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD HIP / ROCm Configuration Details
+DOMAIN      : software
+COMMAND     : hipconfig  --full
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: hipconfig: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Installed ROCm Packages
+DOMAIN      : software
+COMMAND     : apt list --installed | grep rocm
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+
+WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD ROCm HSA Runtime Details
+DOMAIN      : software
+COMMAND     : rocminfo
+TIMESTAMP   : 2026-08-13T17:01:50Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocminfo: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Collection Summary
+--------------------------------------------------------------------------------
+Completed    : 2026-08-13T17:01:50Z
+Vendor       : AMD (MI300X detected via PCI)
+Failed       : 51 command(s)
+================================================================================

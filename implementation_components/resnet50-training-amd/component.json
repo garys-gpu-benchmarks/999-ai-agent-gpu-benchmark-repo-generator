@@ -1,0 +1,25 @@
+{
+  "component_id": "resnet50-training-amd",
+  "description": "AMD 121 ResNet-50 FP16 training collector.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "ResNet-50 FP16 Training Step (PyTorch)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

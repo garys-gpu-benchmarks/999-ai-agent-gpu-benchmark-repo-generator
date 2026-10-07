@@ -1,0 +1,25 @@
+{
+  "component_id": "sdc-ecc-amd",
+  "description": "AMD 104/304 even-index int32 check. RAS columns are rocm-smi counter deltas. CPU fallback leaves hbm3_coverage_gb blank.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "Silent Data Corruption (SDC)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

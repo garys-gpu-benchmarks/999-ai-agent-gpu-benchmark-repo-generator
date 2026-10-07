@@ -1,0 +1,25 @@
+{
+  "component_id": "iperf3-nvidia",
+  "description": "NVIDIA 208/408 iperf3 collector. Measures real iperf3 JSON. Uses BENCHMARK_IPERF_PEER when set; otherwise loopback and records the endpoint.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "iPerf3 TCP/UDP Sweep"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

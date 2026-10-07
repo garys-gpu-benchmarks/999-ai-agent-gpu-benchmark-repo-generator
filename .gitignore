@@ -1,0 +1,83 @@
+# Ignore build artifacts
+build/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Ignore virtual environments
+.venv/
+.venvs/
+venv/
+env/
+.env
+
+# Ignore Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+*.egg
+
+# Ignore benchmark results and artifacts
+results/
+results/*
+!results/.gitkeep
+!results/raw/
+!results/raw/.gitkeep
+!results/parsed/
+!results/parsed/.gitkeep
+!results/generation_manifest.json
+*.db
+*.sqlite
+*.sqlite3
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Ignore Office lock/temp files
+~$*
+.~lock.*#
+
+# Ignore test fixtures (fixture DB is generated on-the-fly)
+tests/fixtures/benchmark.db
+
+# Ignore credentials and secrets
+.env
+.env.local
+credentials.json
+secrets.yaml
+.credentials
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore temporary files
+tmp/
+temp/
+*.tmp
+.setup.lock
+.setup_state
+.rocm_runtime_stage.env
+results/reboot_resume.log
+
+# Nested template copy is a local generation aid, not a published artifact.
+ai-agent-gpu-benchmark-repo-generator_copy/
+TEMPLATE_00_*_copy/
+
+# Runtime / operator artifacts
+runtime_ledger.csv
+benchmark_actual.csv
+benchmark_actual_excel.csv
+*.zip
+RESULTS/
+.cache/
+*.safetensors

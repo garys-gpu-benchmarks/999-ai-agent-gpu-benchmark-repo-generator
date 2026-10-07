@@ -1,0 +1,25 @@
+{
+  "component_id": "system-config-nvidia",
+  "description": "NVIDIA 201/401 CUDA stack verification. Compares kernel/driver/CUDA/VBIOS to yaml. Does not treat the substring NVIDIA as firmware compliance.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "System Config Verification"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

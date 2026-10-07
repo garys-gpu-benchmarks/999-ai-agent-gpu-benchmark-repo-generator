@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import csv
+import io
+import json
+import subprocess
+import time
+from pathlib import Path
+
+import yaml
+
+
+def pv(params, key, profile, default=""):
+    raw = params.get(key, default)
+    if isinstance(raw, dict):
+        return raw.get(profile, raw.get("smoke", default))
+    return default if raw is None else raw
+
+
+def as_list(value):
+    return [p.strip() for p in str(value or "").replace(";", ",").split(",") if p.strip()]
+
+
+def load_params(path):
+    cfg = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    return cfg.get("sweep") or {}
+
+
+def write_csv(path, header, rows):
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=header, extrasaction="ignore", lineterminator=chr(10))
+    writer.writeheader()
+    rows = list(rows)
+    if len(rows) == 1:
+        rows.append(dict(rows[0]))
+    for index, row in enumerate(rows):
+        writer.writerow({"sample_index": index, **row})
+    text = buf.getvalue()
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(text, encoding="utf-8")
+    print(text, end="")
+    return text
+
+
+DEFAULT_UDP_RATE = "10G"
+
+
+def udp_rate(raw) -> str:
+    """UDP -b target rate. iperf3 itself defaults UDP to 1 Mbit/s, which made the
+    UDP metric report that cap instead of throughput. Empty or 0 uses DEFAULT_UDP_RATE."""
+    text = str(raw or "").strip()
+    if text in {"", "0", "0M", "0K", "0G"}:
+        return DEFAULT_UDP_RATE
+    return text
+
+
+def received_bps(end: dict, protocol: str) -> float:
+    """Receiver-side bits/s: what actually arrived, not what the sender pushed.
+    iperf3 reports end.sum_received for TCP and, in current versions, for UDP.
+    Older iperf3 UDP output has only end.sum (sender rate) with the receiver's
+    packet counts; scale it by the packets that arrived. 0.0 when neither exists."""
+    received = end.get("sum_received")
+    if isinstance(received, dict) and received.get("bits_per_second") is not None:
+        return float(received["bits_per_second"])
+    if protocol == "udp":
+        total = end.get("sum") or {}
+        packets = float(total.get("packets") or 0)
+        lost = float(total.get("lost_packets") or 0)
+        bits = float(total.get("bits_per_second") or 0)
+        if packets > 0 and bits > 0:
+            return bits * max(packets - lost, 0.0) / packets
+    return 0.0
+
+
+def client_timeout(seconds: int) -> int:
+    # -t N is transfer time. Localhost TCP plus -J wrap-up overruns seconds+30
+    # on baseline (100s) and extended (290s).
+    return max(int(seconds) + 180, int(seconds) * 3)
+
+
+def _stop(proc: subprocess.Popen | None) -> None:
+    if proc is None or proc.poll() is not None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def iperf(protocol: str, port: int, seconds: int, streams: int, reverse, bandwidth: str):
+    last_error = ""
+    budget = client_timeout(seconds)
+    for candidate in (port, port + 1, port + 2):
+        server = subprocess.Popen(
+            ["iperf3", "-s", "-1", "-p", str(candidate)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        time.sleep(0.3)
+        if server.poll() is not None:
+            last_error = server.stderr.read() if server.stderr else "iperf3 server exited"
+            continue
+        cmd = [
+            "iperf3", "-c", "127.0.0.1", "-p", str(candidate),
+            "-t", str(seconds), "-P", str(streams), "-i", "0", "-J",
+        ]
+        if protocol == "udp":
+            cmd += ["-u", "-b", bandwidth]
+        if str(reverse).lower() in {"true", "1", "yes"}:
+            cmd.append("-R")
+        try:
+            completed = subprocess.run(cmd, capture_output=True, text=True, timeout=budget)
+        except subprocess.TimeoutExpired:
+            _stop(server)
+            last_error = f"iperf3 {protocol} client exceeded {budget}s"
+            continue
+        _stop(server)
+        try:
+            payload = json.loads(completed.stdout or "{}")
+        except json.JSONDecodeError:
+            last_error = "iperf3 produced invalid JSON"
+            continue
+        end = payload.get("end") or {}
+        sum_sent = end.get("sum_sent") or end.get("sum") or {}
+        bits = received_bps(end, protocol)
+        jitter = float((end.get("sum") or {}).get("jitter_ms") or 0.0)
+        lost = float((end.get("sum") or {}).get("lost_percent") or 0.0)
+        retr = float(sum_sent.get("retransmits") or 0.0)
+        if bits <= 0:
+            last_error = "iperf3 JSON has no receiver-side throughput"
+            continue
+        return bits, jitter, lost, retr, ""
+    return 0.0, 0.0, 0.0, 0.0, last_error or "iperf3 server failed"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run-dir", required=True)
+    parser.add_argument("--raw-file", required=True)
+    parser.add_argument("--profile", default="smoke")
+    parser.add_argument("--config", default="config/benchmark_config.yaml")
+    parser.add_argument("--device", default="gpu")
+    parser.add_argument("--output-format", default="csv")
+    args = parser.parse_args()
+    params = load_params(args.config)
+    seconds = max(1, int(float(pv(params, "time", args.profile, 2) or 2)))
+    port = int(float(pv(params, "port", args.profile, 5201) or 5201))
+    streams = int(float(pv(params, "parallel_streams", args.profile, 1) or 1))
+    reverse = pv(params, "reverse_mode", args.profile, False)
+    protocols = as_list(pv(params, "protocol", args.profile, "tcp,udp"))
+    bandwidth = udp_rate(pv(params, "bandwidth_limit", args.profile, pv(params, "bandwidth", args.profile, pv(params, "udp_bandwidth", args.profile, ""))))
+    Path(args.run_dir).mkdir(parents=True, exist_ok=True)
+    header = [
+        "sample_index", "status", "protocol", "parallel_streams", "tcp_loopback_gbps",
+        "udp_throughput_gbps", "udp_jitter_ms", "packet_loss_rate", "tcp_retransmit_count",
+        "bits_per_second", "error_message",
+    ]
+    rows = []
+    for proto in protocols or ["tcp", "udp"]:
+        bits, jitter, lost, retr, error = iperf(proto.lower(), port, seconds, streams, reverse, bandwidth)
+        gb_s = bits / 1e9 if not error else ""
+        is_tcp = proto.lower() == "tcp"
+        rows.append({
+            "status": "ok" if not error else "error",
+            "protocol": proto,
+            "parallel_streams": streams,
+            "tcp_loopback_gbps": gb_s if is_tcp else "",
+            "udp_throughput_gbps": gb_s if not is_tcp else "",
+            "udp_jitter_ms": jitter if not is_tcp else "",
+            "packet_loss_rate": lost if not is_tcp else "",
+            "tcp_retransmit_count": retr if is_tcp else "",
+            "bits_per_second": bits if not error else "",
+            "error_message": error,
+        })
+    write_csv(args.raw_file, header, rows)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

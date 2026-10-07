@@ -1,0 +1,25 @@
+{
+  "component_id": "gpu-health-nvidia",
+  "description": "NVIDIA 202/402 health probes. Independent nvidia-smi/dmon samples plus dmesg Xid count. Does not reuse one row as two samples.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "NVIDIA System Validation (clocks, temperature, etc.)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

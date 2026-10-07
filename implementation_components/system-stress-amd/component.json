@@ -1,0 +1,46 @@
+{
+  "component_id": "system-stress-amd",
+  "description": "AMD CPU+GPU stress collector. Installs rocblas-bench; does not run a GEMM sweep.",
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": [
+    "rocblas-bench invocation",
+    "scripts/build.sh",
+    "gemm parser",
+    "thresholds"
+  ],
+  "verifies": [
+    "stress-ng",
+    "rocblas-bench",
+    "amd-smi",
+    "sensors"
+  ],
+  "contracts": {
+    "skip_rvs_default": 1,
+    "compile_rocblas_bench": true,
+    "gemm_per_point": false,
+    "build_policy": "compile_rocblas"
+  },
+  "also_applies_to": [
+    "103",
+    "303"
+  ],
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "CPU + System Stress (Baseline Health)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ]
+}

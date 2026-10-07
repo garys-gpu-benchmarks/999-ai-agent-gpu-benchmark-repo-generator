@@ -1,0 +1,31 @@
+{
+  "component_id": "babelstream-hbm-nvidia",
+  "description": "NVIDIA CUDA BabelStream source, nvcc build.sh, and collector. Does not replace babelstream-hbm-amd.",
+  "overlay": [
+    "src/babelstream.cu",
+    "scripts/build.sh",
+    "scripts/collect_babelstream.py",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "BabelStream HBM Bandwidth"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "source",
+  "completeness": "thin",
+  "provides": [
+    "src/babelstream.cu",
+    "scripts/build.sh",
+    "scripts/collect_babelstream.py",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

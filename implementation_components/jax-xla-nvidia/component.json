@@ -1,0 +1,27 @@
+{
+  "component_id": "jax-xla-nvidia",
+  "description": "NVIDIA JAX/XLA forward-pass collector and runner (same scripts as jax-xla-amd 126/326).",
+  "overlay": [
+    "scripts/collect_jax_xla.py",
+    "scripts/gpu-bench-jax-xla-forwardpass.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "JAX XLA Transformer Forward Pass"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_jax_xla.py",
+    "scripts/gpu-bench-jax-xla-forwardpass.py"
+  ],
+  "does_not_provide": []
+}

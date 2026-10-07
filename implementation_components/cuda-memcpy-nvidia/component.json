@@ -1,0 +1,29 @@
+{
+  "component_id": "cuda-memcpy-nvidia",
+  "description": "NVIDIA 214/414 CUDA memcpy sweep with separate H2D/D2H/D2D timings. Fails if nvcc or the binary is missing. No host-memset fallback.",
+  "overlay": [
+    "src/cuda_memcpy.cu",
+    "scripts/build.sh",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "CUDA Memcpy Bandwidth Test (H2D, D2H, D2D)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "closed",
+  "provides": [
+    "src/cuda_memcpy.cu",
+    "scripts/build.sh",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

@@ -1,0 +1,579 @@
+================================================================================
+TITLE       : Workload Inventory Run - Software
+FILE        : software_info.txt
+HOST        : gpu-mi300x-example-host
+VENDOR      : AMD (MI300X detected via PCI)
+--------------------------------------------------------------------------------
+Thu Aug 13 17:01:47 UTC 2026
+================================================================================
+
+================================================================================
+DESCRIPTION : Commands To Be Run # Description
+--------------------------------------------------------------------------------
+lsb_release -a  # OS version & Ubuntu release
+uname -a  # Linux Kernel Version
+dkms --version  # Kernel Modules (DKMS) Version
+dkms status  # Kernel Modules (DKMS) Status
+python3 --version  # Python version
+python3 -c "import torch; print(torch.__version__)"  # PyTorch Version (generic)
+dpkg-query -W libnuma1  # NUMA library (libuma) version
+python3 -c "import torchvision; print(torchvision.__version__)"  # TorchVision version
+python3 -m pip show torchbench | grep -E '^Name:|^Version:|^Summary:'  # TorchBench package info
+pytest --version  # Pytest version
+numactl --version  # NUMA Control Tool (numactl) Version
+python3 -c "import triton; print(triton.__version__)"  # Triton compiler version
+clang --version | head -1  # Clang compiler version
+gcc --version  | head -1  # GCC compiler version
+g++ --version | head -1  # G++ compiler version
+cmake --version | head -1  # CMake version
+make --version | head -2  # Make utility version
+bash --version | head -1  # Bash version
+mpirun --version | head -1  # MPI runtime (mpirun) version
+fio --version  # FIO benchmark version
+nvme version  # NVMe CLI version
+python3 -c "import sglang; print(sglang.__version__)"  # SGLang version
+iperf3 --version | head -1  # iPerf3 version
+python3 -c "import vllm; print(vllm.__version__)"  # vLLM version
+python3 -c "import jax; print(jax.__version__)"  # JAX version
+python3 -c "import jaxlib; print(jaxlib.__version__)"  # JAXlib version
+dpkg-query -W libaio1t64  # libaio (Linux AIO library) version
+python3 -c "import faiss; print(faiss.__version__)"  # FAISS version
+python3 -c "import diffusers; print(diffusers.__version__)"  # Diffusers library version
+dpkg -l | grep -i lmbench  # lmbench package version
+gcc -fopenmp -dM -E - < /dev/null | grep _OPENMP  # OpenMP version
+pip show llama-index | grep Version  # LlamaIndex version
+huggingface-cli scan-cache | grep -i mistra  # Mistral model revision
+python3 -c "import yaml; print(yaml.__version__)"  # PyYAML version
+sqlite3 --version  # SQLite version
+perf --version  # Perf tool (Linux perf) version
+stress-ng --version  # stress-ng version
+bc --version | head -1  # BC calculator (bc) Version
+jq --version  # JQ (jq) Version
+dpkg-query -W rocm-core  # AMD Installed ROCm version
+amd-smi version  # AMD SMI Tool & Library Versions
+hipcc --version  # AMD HIP Compiler Version
+python3 -c "import torch; print(torch.version.hip)"  # AMD PyTorch HIP Version (AMD GPU)
+dpkg-query -W miopen-hip  # AMD MIOpen HIP version
+rocm-smi --version  # AMD ROCm SMI version
+dpkg-query -W rccl  # AMD RCCL version
+dpkg-query -W rocblas  # AMD Installed rocBLAS version
+dpkg-query -W rocsolver  # AMD rocSOLVER version
+rochpl --version  # AMD rocHPL version
+echo "RVS Version: $(/opt/rocm/bin/rvs --version)"  # AMD ROCm Validation Suite version
+dpkg -l | egrep -i '^(ii)\s+(amdgpu-install |amd-smi-lib |hipblas |hipblaslt |hipcc |hipfft |hiprand |hip-runtime-amd |hipsolver |hipsparse |hiptensor |hsa-rocr |libgl1-amdgpu-mesa-dri:amd64 |llvm-amdgpu |miopen-hip |opencl-rocm |rccl |rocblas |rocblaslt |rocfft |rocm-core |rocm-llvm |rocm-validation-suite |rocprim-dev |rocprofiler |rocrand |rocsolver |rocsparse |rocthrust-dev |rocwmma-dev )'  # AMD Installed ROCm & AMD Packages List
+hipconfig  --full  # AMD HIP / ROCm Configuration Details
+apt list --installed | grep rocm  # AMD Installed ROCm Packages
+rocminfo  # AMD ROCm HSA Runtime Details
+
+================================================================================
+
+================================================================================
+DESCRIPTION : OS version & Ubuntu release
+COMMAND     : lsb_release -a
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+Distributor ID:	Ubuntu
+Description:	Ubuntu 24.04.4 LTS
+Release:	24.04
+Codename:	noble
+================================================================================
+
+================================================================================
+DESCRIPTION : Linux Kernel Version
+COMMAND     : uname -a
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+Linux gpu-mi300x-example-host 6.8.0-124-generic #124-Ubuntu SMP PREEMPT_DYNAMIC Tue May 26 13:00:45 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+================================================================================
+
+================================================================================
+DESCRIPTION : Kernel Modules (DKMS) Version
+COMMAND     : dkms --version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: dkms: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Kernel Modules (DKMS) Status
+COMMAND     : dkms status
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: dkms: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Python version
+COMMAND     : python3 --version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+Python 3.12.3
+================================================================================
+
+================================================================================
+DESCRIPTION : PyTorch Version (generic)
+COMMAND     : python3 -c "import torch; print(torch.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'torch'
+================================================================================
+
+================================================================================
+DESCRIPTION : NUMA library (libuma) version
+COMMAND     : dpkg-query -W libnuma1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+libnuma1:amd64	2.0.18-1ubuntu0.24.04.1
+================================================================================
+
+================================================================================
+DESCRIPTION : TorchVision version
+COMMAND     : python3 -c "import torchvision; print(torchvision.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'torchvision'
+================================================================================
+
+================================================================================
+DESCRIPTION : TorchBench package info
+COMMAND     : python3 -m pip show torchbench | grep -E '^Name:|^Version:|^Summary:'
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+/usr/bin/python3: No module named pip
+================================================================================
+
+================================================================================
+DESCRIPTION : Pytest version
+COMMAND     : pytest --version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: pytest: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : NUMA Control Tool (numactl) Version
+COMMAND     : numactl --version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+2.0.18
+================================================================================
+
+================================================================================
+DESCRIPTION : Triton compiler version
+COMMAND     : python3 -c "import triton; print(triton.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'triton'
+================================================================================
+
+================================================================================
+DESCRIPTION : Clang compiler version
+COMMAND     : clang --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: clang: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : GCC compiler version
+COMMAND     : gcc --version  | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: gcc: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : G++ compiler version
+COMMAND     : g++ --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: g++: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : CMake version
+COMMAND     : cmake --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: cmake: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Make utility version
+COMMAND     : make --version | head -2
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: make: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Bash version
+COMMAND     : bash --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)
+================================================================================
+
+================================================================================
+DESCRIPTION : MPI runtime (mpirun) version
+COMMAND     : mpirun --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: mpirun: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : FIO benchmark version
+COMMAND     : fio --version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: fio: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : NVMe CLI version
+COMMAND     : nvme version
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: nvme: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : SGLang version
+COMMAND     : python3 -c "import sglang; print(sglang.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'sglang'
+================================================================================
+
+================================================================================
+DESCRIPTION : iPerf3 version
+COMMAND     : iperf3 --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: iperf3: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : vLLM version
+COMMAND     : python3 -c "import vllm; print(vllm.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'vllm'
+================================================================================
+
+================================================================================
+DESCRIPTION : JAX version
+COMMAND     : python3 -c "import jax; print(jax.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'jax'
+================================================================================
+
+================================================================================
+DESCRIPTION : JAXlib version
+COMMAND     : python3 -c "import jaxlib; print(jaxlib.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'jaxlib'
+================================================================================
+
+================================================================================
+DESCRIPTION : libaio (Linux AIO library) version
+COMMAND     : dpkg-query -W libaio1t64
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+libaio1t64:amd64	0.3.113-6build1.1
+================================================================================
+
+================================================================================
+DESCRIPTION : FAISS version
+COMMAND     : python3 -c "import faiss; print(faiss.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'faiss'
+================================================================================
+
+================================================================================
+DESCRIPTION : Diffusers library version
+COMMAND     : python3 -c "import diffusers; print(diffusers.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'diffusers'
+================================================================================
+
+================================================================================
+DESCRIPTION : lmbench package version
+COMMAND     : dpkg -l | grep -i lmbench
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+================================================================================
+
+================================================================================
+DESCRIPTION : OpenMP version
+COMMAND     : gcc -fopenmp -dM -E - < /dev/null | grep _OPENMP
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: gcc: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : LlamaIndex version
+COMMAND     : pip show llama-index | grep Version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: pip: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Mistral model revision
+COMMAND     : huggingface-cli scan-cache | grep -i mistra
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: huggingface-cli: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : PyYAML version
+COMMAND     : python3 -c "import yaml; print(yaml.__version__)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+6.0.1
+================================================================================
+
+================================================================================
+DESCRIPTION : SQLite version
+COMMAND     : sqlite3 --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: sqlite3: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : Perf tool (Linux perf) version
+COMMAND     : perf --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+perf version 6.8.12
+================================================================================
+
+================================================================================
+DESCRIPTION : stress-ng version
+COMMAND     : stress-ng --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: stress-ng: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : BC calculator (bc) Version
+COMMAND     : bc --version | head -1
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+bc 1.07.1
+================================================================================
+
+================================================================================
+DESCRIPTION : JQ (jq) Version
+COMMAND     : jq --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+jq-1.7
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Installed ROCm version
+COMMAND     : dpkg-query -W rocm-core
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching rocm-core
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD SMI Tool & Library Versions
+COMMAND     : amd-smi version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: amd-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD HIP Compiler Version
+COMMAND     : hipcc --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: hipcc: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD PyTorch HIP Version (AMD GPU)
+COMMAND     : python3 -c "import torch; print(torch.version.hip)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'torch'
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD MIOpen HIP version
+COMMAND     : dpkg-query -W miopen-hip
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching miopen-hip
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD ROCm SMI version
+COMMAND     : rocm-smi --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocm-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD RCCL version
+COMMAND     : dpkg-query -W rccl
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching rccl
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Installed rocBLAS version
+COMMAND     : dpkg-query -W rocblas
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching rocblas
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD rocSOLVER version
+COMMAND     : dpkg-query -W rocsolver
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+dpkg-query: no packages found matching rocsolver
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD rocHPL version
+COMMAND     : rochpl --version
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rochpl: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD ROCm Validation Suite version
+COMMAND     : echo "RVS Version: $(/opt/rocm/bin/rvs --version)"
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+bash: line 1: /opt/rocm/bin/rvs: No such file or directory
+RVS Version: 
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Installed ROCm & AMD Packages List
+COMMAND     : dpkg -l | egrep -i '^(ii)\s+(amdgpu-install |amd-smi-lib |hipblas |hipblaslt |hipcc |hipfft |hiprand |hip-runtime-amd |hipsolver |hipsparse |hiptensor |hsa-rocr |libgl1-amdgpu-mesa-dri:amd64 |llvm-amdgpu |miopen-hip |opencl-rocm |rccl |rocblas |rocblaslt |rocfft |rocm-core |rocm-llvm |rocm-validation-suite |rocprim-dev |rocprofiler |rocrand |rocsolver |rocsparse |rocthrust-dev |rocwmma-dev )'
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD HIP / ROCm Configuration Details
+COMMAND     : hipconfig  --full
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: hipconfig: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Installed ROCm Packages
+COMMAND     : apt list --installed | grep rocm
+TIMESTAMP   : 2026-08-13T17:01:49Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+
+WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD ROCm HSA Runtime Details
+COMMAND     : rocminfo
+TIMESTAMP   : 2026-08-13T17:01:50Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocminfo: command not found
+================================================================================
+

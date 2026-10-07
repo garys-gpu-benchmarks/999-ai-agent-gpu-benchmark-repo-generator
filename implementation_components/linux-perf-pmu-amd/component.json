@@ -1,0 +1,25 @@
+{
+  "component_id": "linux-perf-pmu-amd",
+  "description": "111/311 Linux perf PMU collector. Same scripts/collect_workload.py as the other vendor (111/211/311/411): yaml workload_commands under perf stat -x,; IPC, branch misprediction %, cache misses per 1,000 instructions, pipeline stall % (stall event picked by CPU vendor), context switches/s; na (<reason>) when a counter is not available.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "Linux perf PMU Analysis Harness"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

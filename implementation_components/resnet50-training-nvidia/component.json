@@ -1,0 +1,29 @@
+{
+  "component_id": "resnet50-training-nvidia",
+  "description": "Reusable implementation assets for resnet50 training nvidia.",
+  "overlay": [
+    "scripts/train_resnet50.py",
+    "scripts/collect_resnet50_train.py",
+    "scripts/probe_setup.sh"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "ResNet-50 FP16 Training Step (PyTorch)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/train_resnet50.py",
+    "scripts/collect_resnet50_train.py",
+    "scripts/probe_setup.sh"
+  ],
+  "does_not_provide": []
+}

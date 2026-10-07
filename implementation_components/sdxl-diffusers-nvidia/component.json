@@ -1,0 +1,35 @@
+{
+  "component_id": "sdxl-diffusers-nvidia",
+  "description": "NVIDIA Diffusers SDXL benchmark; every profile loads real SDXL and separates cold from timed inference.",
+  "overlay": [
+    "run_benchmark.sh",
+    "scripts/infer_sdxl.py",
+    "scripts/collect_sdxl.py",
+    "scripts/install_sdxl_python.sh",
+    "scripts/parse_results.py",
+    "scripts/probe_setup.sh"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "Stable Diffusion XL Inference Baseline"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "run_benchmark.sh",
+    "scripts/infer_sdxl.py",
+    "scripts/collect_sdxl.py",
+    "scripts/install_sdxl_python.sh",
+    "scripts/parse_results.py",
+    "scripts/probe_setup.sh"
+  ],
+  "does_not_provide": []
+}

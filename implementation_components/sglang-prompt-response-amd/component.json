@@ -1,0 +1,37 @@
+{
+  "component_id": "sglang-prompt-response-amd",
+  "description": "AMD sequential SGLang prompt-response runner. Baseline/extended require importable sglang.",
+  "overlay": [
+    "run_benchmark.sh",
+    "scripts/ensure_setup.sh",
+    "scripts/tiny_sglang_server.py",
+    "scripts/prompt_response_client.py",
+    "scripts/patch_aiter_gfx1250_optional.py",
+    "scripts/patch_triton_gluon_gfx1250_optional.py",
+    "scripts/prefetch_sglang_model.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "SGLang Prompt-Response Benchmark"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "run_benchmark.sh",
+    "scripts/ensure_setup.sh",
+    "scripts/tiny_sglang_server.py",
+    "scripts/prompt_response_client.py",
+    "scripts/patch_aiter_gfx1250_optional.py",
+    "scripts/patch_triton_gluon_gfx1250_optional.py",
+    "scripts/prefetch_sglang_model.py"
+  ],
+  "does_not_provide": []
+}

@@ -1,0 +1,27 @@
+AI Agent GPU Benchmark repositories
+Copyright 2026 Gary Michael Bass and contributors
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+This repository contains benchmark harness code only. It does not ship
+GPU driver stacks, model weights, or cloud credentials.
+
+Hugging Face / model weights
+  LLM Serving workloads (vLLM, SGLang) may download third-party weights
+  such as mistralai/Mistral-7B-v0.3 at runtime. Those weights are subject
+  to their own licenses. Provide HF_TOKEN in the environment when required.
+  Do not commit tokens, cookies, or downloaded weight caches.
+
+Local execution
+  setup.sh and run_benchmark.sh are local-only. They do not take SSH
+  hosts, IPs, or private keys. Validate on your own GPU host.
+
+Sibling collector note (105 / 205)
+  Both are the PyTorch Tensor Op Correctness Suite. The AMD 105 collector
+  compares GPU output to a CPU FP32 reference. The NVIDIA 205 collector
+  compares GPU output to a CPU FP64 reference. Same sweep knobs are not
+  the same wall-clock work.
+
+LLM Serving default
+  A bare `bash run_benchmark.sh` runs the smoke profile (tiny local
+  server). Pass --baseline or --extended to load the real model.

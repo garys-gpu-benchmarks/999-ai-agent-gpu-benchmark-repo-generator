@@ -1,0 +1,24 @@
+{
+  "component_id": "multichase-numa-amd",
+  "description": "C pointer-chase that gcc -O2 cannot dead-code-eliminate. Baseline 1.33e9 iters must report real ns/load, not 0.000000.",
+  "overlay": [
+    "src/multichase.c",
+    "scripts/collect_multichase.py",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "multichase Pointer-Chase"
+    }
+  ],
+  "role": "collector",
+  "completeness": "closed",
+  "provides": [
+    "src/multichase.c",
+    "scripts/collect_multichase.py",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

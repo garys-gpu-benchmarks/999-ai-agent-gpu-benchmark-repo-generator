@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amd.example/schemas/benchmark_specification.schema.json",
+  "title": "Benchmark Specification",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "field_name",
+      "source_file",
+      "value"
+    ],
+    "properties": {
+      "field_name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "source_file": {
+        "type": "string",
+        "minLength": 1
+      },
+      "value": {
+        "type": "string"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "contains": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "const": "Workload Number"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          }
+        },
+        "required": [
+          "field_name",
+          "value"
+        ]
+      }
+    },
+    {
+      "contains": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "const": "Workload Name"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "not": {
+              "enum": [
+                "--",
+                "TBD"
+              ]
+            }
+          }
+        },
+        "required": [
+          "field_name",
+          "value"
+        ]
+      }
+    },
+    {
+      "contains": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "const": "Execution Domain"
+          },
+          "value": {
+            "type": "string",
+            "enum": [
+              "GPU Compute / ROCm",
+              "GPU Compute / CUDA",
+              "LLM Serving",
+              "Memory / Transfer",
+              "CPU / System",
+              "End-to-End Pipeline",
+              "Validation / Correctness"
+            ]
+          }
+        },
+        "required": [
+          "field_name",
+          "value"
+        ]
+      }
+    },
+    {
+      "contains": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "const": "Workload Type"
+          },
+          "value": {
+            "type": "string",
+            "enum": [
+              "Benchmark",
+              "Test"
+            ]
+          }
+        },
+        "required": [
+          "field_name",
+          "value"
+        ]
+      }
+    },
+    {
+      "contains": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "const": "Metrics"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "not": {
+              "enum": [
+                "--",
+                "TBD"
+              ]
+            }
+          }
+        },
+        "required": [
+          "field_name",
+          "value"
+        ]
+      }
+    }
+  ]
+}

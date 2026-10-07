@@ -1,0 +1,33 @@
+{
+  "component_id": "sdxl-diffusers-amd",
+  "description": "AMD Diffusers SDXL benchmark; every profile loads real SDXL and separates cold from timed inference.",
+  "overlay": [
+    "run_benchmark.sh",
+    "run.py",
+    "scripts/infer_sdxl.py",
+    "scripts/install_sdxl_python.sh",
+    "scripts/parse_results.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "Stable Diffusion XL Inference Baseline"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "run_benchmark.sh",
+    "run.py",
+    "scripts/infer_sdxl.py",
+    "scripts/install_sdxl_python.sh",
+    "scripts/parse_results.py"
+  ],
+  "does_not_provide": []
+}

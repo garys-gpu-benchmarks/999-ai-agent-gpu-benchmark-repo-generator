@@ -1,0 +1,27 @@
+{
+  "component_id": "distilbert-nvidia",
+  "description": "NVIDIA DistilBERT SST-2 training collector and runner.",
+  "overlay": [
+    "scripts/collect_distilbert_train.py",
+    "scripts/gpu-bench-distilbert-sst2-train.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "DistilBERT NLP Training Baseline"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_distilbert_train.py",
+    "scripts/gpu-bench-distilbert-sst2-train.py"
+  ],
+  "does_not_provide": []
+}

@@ -1,0 +1,49 @@
+{
+  "component_id": "system-config-amd",
+  "description": "AMD System Config Verification collector (rvs --version, not rvs -l).",
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": [
+    "scripts/build.sh",
+    "scripts/run_benchmark.sh",
+    "thresholds"
+  ],
+  "verifies": [
+    "rvs --version",
+    "rocminfo",
+    "rocm-smi",
+    "amd-smi",
+    "hipcc"
+  ],
+  "contracts": {
+    "skip_rvs_default": 0,
+    "compile_rocblas_bench": false,
+    "gemm_per_point": false,
+    "build_policy": "verify_tools",
+    "forbidden_cli": [
+      "rvs -l"
+    ]
+  },
+  "also_applies_to": [
+    "101",
+    "301"
+  ],
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "System Config Verification"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ]
+}

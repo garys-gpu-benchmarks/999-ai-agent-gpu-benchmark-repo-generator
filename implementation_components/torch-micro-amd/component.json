@@ -1,0 +1,31 @@
+{
+  "component_id": "torch-micro-amd",
+  "description": "AMD 119/319 PyTorch Microkernel Suite GEMM/Conv2d. Uses the same gemm.py, conv2d.py, and collect_torch_micro.py as torch-micro-nvidia; collect_workload.py adapts the harness arguments.",
+  "overlay": [
+    "scripts/gemm.py",
+    "scripts/conv2d.py",
+    "scripts/collect_torch_micro.py",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "PyTorch Microkernel Suite"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/gemm.py",
+    "scripts/conv2d.py",
+    "scripts/collect_torch_micro.py",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

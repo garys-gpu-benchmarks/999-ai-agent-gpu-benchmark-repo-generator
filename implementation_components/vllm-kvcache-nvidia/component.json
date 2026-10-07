@@ -1,0 +1,37 @@
+{
+  "component_id": "vllm-kvcache-nvidia",
+  "description": "NVIDIA KV-cache stress runner using real vLLM in every profile, wall-clock concurrent decode throughput, and required occupancy telemetry.",
+  "overlay": [
+    "config/benchmark_config.yaml",
+    "setup.sh",
+    "requirements.txt",
+    "run_benchmark.sh",
+    "scripts/ensure_setup.sh",
+    "scripts/benchmark_serving.py",
+    "scripts/tiny_kv_server.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "KV Cache Stress Test"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "config/benchmark_config.yaml",
+    "setup.sh",
+    "requirements.txt",
+    "run_benchmark.sh",
+    "scripts/ensure_setup.sh",
+    "scripts/benchmark_serving.py",
+    "scripts/tiny_kv_server.py"
+  ],
+  "does_not_provide": []
+}

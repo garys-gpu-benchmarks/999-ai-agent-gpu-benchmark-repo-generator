@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amd.example/schemas/generation_report.schema.json",
+  "title": "Generation Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_template_commit",
+    "workload_id",
+    "workload_name",
+    "generated_at",
+    "generation_started_at",
+    "generation_finished_at",
+    "generation_duration_seconds"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "source_template_commit": {
+      "type": "string",
+      "minLength": 7,
+      "maxLength": 40,
+      "pattern": "^[0-9a-fA-F]+$"
+    },
+    "workload_id": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "workload_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generation_started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generation_finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generation_duration_seconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "generated_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "agent"
+      ],
+      "properties": {
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string"
+        }
+      }
+    },
+    "template_repo": {
+      "type": "string"
+    },
+    "template_copy_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "template_copy_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "template_copy_removed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "implementation_component_resolution": {
+      "type": "string",
+      "enum": [
+        "automatic"
+      ]
+    },
+    "implementation_components_discovered": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "uniqueItems": true
+    },
+    "implementation_component_reasons": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

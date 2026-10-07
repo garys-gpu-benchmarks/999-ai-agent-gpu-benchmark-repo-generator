@@ -1,0 +1,47 @@
+{
+  "component_id": "sglang-prompt-response-nvidia",
+  "description": "Reusable implementation assets for sglang prompt response nvidia.",
+  "overlay": [
+    "setup.sh",
+    "scripts/parse_results.py",
+    "run_benchmark.sh",
+    "scripts/ensure_setup.sh",
+    "scripts/lib/sglang_nvidia_libs.sh",
+    "scripts/install_sglang_nvidia.sh",
+    "scripts/install_sglang_launch_deps.py",
+    "scripts/sglang_py314_patch.py",
+    "scripts/sglang_py314.pth",
+    "scripts/tiny_sglang_server.py",
+    "scripts/prompt_response_client.py",
+    "scripts/prefetch_sglang_model.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "SGLang Prompt-Response Benchmark"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "setup.sh",
+    "scripts/parse_results.py",
+    "run_benchmark.sh",
+    "scripts/ensure_setup.sh",
+    "scripts/lib/sglang_nvidia_libs.sh",
+    "scripts/install_sglang_nvidia.sh",
+    "scripts/install_sglang_launch_deps.py",
+    "scripts/sglang_py314_patch.py",
+    "scripts/sglang_py314.pth",
+    "scripts/tiny_sglang_server.py",
+    "scripts/prompt_response_client.py",
+    "scripts/prefetch_sglang_model.py"
+  ],
+  "does_not_provide": []
+}

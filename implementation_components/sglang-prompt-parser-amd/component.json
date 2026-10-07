@@ -1,0 +1,25 @@
+{
+  "component_id": "sglang-prompt-parser-amd",
+  "description": "Reusable implementation assets for sglang prompt parser amd.",
+  "overlay": [
+    "scripts/parse_results.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "SGLang Prompt-Response Benchmark"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/parse_results.py"
+  ],
+  "does_not_provide": []
+}

@@ -1,0 +1,25 @@
+{
+  "component_id": "stream-collect-amd",
+  "description": "AMD 107 STREAM collector with -DNTIMES.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "STREAM - CPU (Copy/Scale/Add/Triad)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

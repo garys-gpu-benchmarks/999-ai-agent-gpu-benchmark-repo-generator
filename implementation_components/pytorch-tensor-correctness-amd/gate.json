@@ -1,0 +1,12 @@
+{
+  "thresholds": {
+    "max_abs_error_min": 0,
+    "max_abs_error_max": 100,
+    "max_rel_error_min": 0,
+    "max_rel_error_max": 1.0e9,
+    "tolerance_compliance_min": 100,
+    "tolerance_compliance_max": 100,
+    "coverage_count_min": 1,
+    "failure_count_max": 0
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "component_id": "fio-nvme-nvidia",
+  "description": "NVIDIA 206/406 FIO JSON collector. Fails if fio is missing or returns no jobs.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "FIO NVMe Sweep"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

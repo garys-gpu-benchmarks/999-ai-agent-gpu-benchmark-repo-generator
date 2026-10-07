@@ -1,0 +1,29 @@
+{
+  "component_id": "resnet50-inference-nvidia",
+  "description": "NVIDIA ResNet-50 BF16 inference collector and runner.",
+  "overlay": [
+    "scripts/collect_resnet50_infer.py",
+    "scripts/gpu-bench-resnet50-pytorch-inference.py",
+    "scripts/probe_setup.sh"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "ResNet-50 BF16 Inference Throughput Sweep"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_resnet50_infer.py",
+    "scripts/gpu-bench-resnet50-pytorch-inference.py",
+    "scripts/probe_setup.sh"
+  ],
+  "does_not_provide": []
+}

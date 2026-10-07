@@ -1,0 +1,24 @@
+{
+  "component_id": "numa-cache-collector",
+  "description": "NUMA cache/DRAM dependent pointer-chase collector with threaded useful-load bandwidth and per-tier cache misses. Applies to AMD 110/310 and NVIDIA 210/410.",
+  "overlay": [
+    "scripts/collect_numa_cache.py",
+    "scripts/build.sh",
+    "src/numa_sweep.cpp"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "NUMA Cache Latency Sweep"
+    }
+  ],
+  "role": "source",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_numa_cache.py",
+    "scripts/build.sh",
+    "src/numa_sweep.cpp"
+  ],
+  "does_not_provide": []
+}

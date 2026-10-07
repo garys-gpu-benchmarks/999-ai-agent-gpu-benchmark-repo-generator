@@ -1,0 +1,43 @@
+{
+  "component_id": "sglang-serving-nvidia",
+  "description": "Reusable implementation assets for sglang serving nvidia.",
+  "overlay": [
+    "run_benchmark.sh",
+    "scripts/bench_serving.py",
+    "scripts/parse_results.py",
+    "scripts/lib/sglang_nvidia_libs.sh",
+    "scripts/install_sglang_nvidia.sh",
+    "scripts/install_sglang_launch_deps.py",
+    "scripts/sglang_py314_patch.py",
+    "scripts/sglang_py314.pth",
+    "scripts/tiny_sglang_server.py",
+    "scripts/prefetch_sglang_model.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "SGLang Serving Latency Benchmark"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "run_benchmark.sh",
+    "scripts/bench_serving.py",
+    "scripts/parse_results.py",
+    "scripts/lib/sglang_nvidia_libs.sh",
+    "scripts/install_sglang_nvidia.sh",
+    "scripts/install_sglang_launch_deps.py",
+    "scripts/sglang_py314_patch.py",
+    "scripts/sglang_py314.pth",
+    "scripts/tiny_sglang_server.py",
+    "scripts/prefetch_sglang_model.py"
+  ],
+  "does_not_provide": []
+}

@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          pip install --upgrade pip
+          pip install ruff PyYAML
+
+      - name: Lint shell scripts
+        run: |
+          find scripts -name "*.sh" -type f -print0 | xargs -0 shellcheck
+
+      - name: Lint Python scripts
+        run: |
+          ruff check scripts --exclude scripts/templates || true
+
+      - name: Host-safe syntax checks
+        run: |
+          bash -n setup.sh
+          bash -n run_benchmark.sh
+          python3 -m compileall -q scripts
+          bash run_benchmark.sh --help >/dev/null
+
+      - name: Validate definition and schemas
+        run: |
+          python3 -c "import json; json.load(open('benchmark_specification.json'))"
+          python3 -c "import json; json.load(open('schemas/benchmark_specification.schema.json'))"
+          python3 scripts/validate_template_inputs.py \
+            --benchmark-specification benchmark_specification.json \
+            --benchmark-schema schemas/benchmark_specification.schema.json
+
+      - name: GitHub publication readiness
+        run: bash scripts/check_github_publish_ready.sh
+
+      - name: Structural self-check
+        run: |
+          test -f run_benchmark.sh
+          test -f setup.sh
+          test -f benchmark_specification.json
+          test -f config/benchmark_config.yaml
+          test -f LICENSE
+          test -f legal/NOTICE
+          test -f .gitignore
+          test -f .gitattributes
+          test ! -d ai-agent-gpu-benchmark-repo-generator_copy
+          test ! -f README_TEMPLATE.md
+          test ! -f AGENTS.md
+          test ! -f scripts/self_check_generated_repo.sh
+          test ! -f benchmark_actual.csv
+          test ! -f benchmark_actual_excel.csv
+          test ! -d .claude
+          test -f scripts/prepare_github_publish.sh
+          test -f scripts/check_github_publish_ready.sh
+
+      - name: Do not install GPU stacks on github-hosted runners
+        run: |
+          echo "setup.sh and run_benchmark.sh are operator commands for a GPU host."
+          echo "This workflow does not invoke them."

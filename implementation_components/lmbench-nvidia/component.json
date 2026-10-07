@@ -1,0 +1,25 @@
+{
+  "component_id": "lmbench-nvidia",
+  "description": "NVIDIA 212/412 lmbench collector. Fails if lat_mem_rd/bw_mem binaries are missing. No Python spin-loop fallback.",
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "lmbench Microbench Suite"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

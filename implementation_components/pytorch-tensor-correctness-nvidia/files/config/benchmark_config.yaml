@@ -1,0 +1,42 @@
+# Generated from BenchmarkMatrixDefinitions.xlsx::Parameters_SmokeBaselineExtend for workload 205.
+# Parameter names come from Parameter_01..Parameter_20. Values come from Parameters_SmokeBaselineExtend.
+# Do not invent or replace these tokens/numbers. Nested list/map reshaping is allowed
+# when the runner needs structured sweeps; keep the same tokens and numbers.
+# Command columns on Workload_Definitions are generated display. Sweep/list flags in those
+# commands are documentary; omit them so yaml expands cases.
+# sweep.profile is baseline for LLM Serving and smoke otherwise.
+# Add thresholds: or baselines: from hardware_profile.mi300x.yaml and Workload Type.
+sweep:
+  profile: smoke
+  device_id: 0
+  op_name: matmul,conv2d
+  dtype:
+    smoke: f16_r
+    baseline: f16_r,bf16_r,f32_r
+    extended: f16_r,bf16_r,f32_r
+  shape:
+    smoke: matmul=1x128x128;conv2d=1x3x32x32
+    baseline: matmul=1x128x128,8x512x512;conv2d=1x3x32x32,8x3x64x64
+    extended: matmul=1x128x128,8x512x512;conv2d=1x3x32x32,8x3x64x64
+  rtol:
+    smoke: '0.02'
+    baseline: f16_r=0.02,bf16_r=0.02,f32_r=1e-05
+    extended: f16_r=0.02,bf16_r=0.02,f32_r=1e-05
+  atol:
+    smoke: '0.1'
+    baseline: f16_r=0.1,bf16_r=0.5,f32_r=1e-03
+    extended: f16_r=0.1,bf16_r=0.5,f32_r=1e-03
+  tolerance_rel: 1e-3
+  num_iterations:
+    smoke: 2
+    baseline: 50
+    extended: 100
+  seed: 42
+
+thresholds:
+  pass_rate_percent_min: 100  # Success Criteria: every op/dtype/shape case must pass
+  max_abs_error_max: 1.0  # Absolute error ceiling versus the CPU FP64 reference
+  max_rel_error_max: 300.0  # Relative error spikes when reference values approach zero; observed valid baseline/extended peaks exceed 200.
+  tolerance_compliance_min: 100  # Percent of op/dtype/shape cases within tolerance; same meaning as AMD 105/305
+  coverage_count_min: 2  # At least two op/dtype/shape samples are required
+  failure_count_max: 0  # Success Criteria: zero failed tensor op cases

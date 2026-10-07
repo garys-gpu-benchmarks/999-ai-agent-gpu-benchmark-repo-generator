@@ -1,0 +1,29 @@
+{
+  "component_id": "gups-nvidia",
+  "description": "NVIDIA 213/413 OpenMP C GUPS. Honors num_threads. Caps iterations so extended cannot run for hours. TLB/L3 only when perf reports them.",
+  "overlay": [
+    "src/gups.c",
+    "scripts/build.sh",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "GUPS Random Memory"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "closed",
+  "provides": [
+    "src/gups.c",
+    "scripts/build.sh",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

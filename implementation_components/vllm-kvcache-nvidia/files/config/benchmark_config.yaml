@@ -1,0 +1,36 @@
+# Generated from BenchmarkSpecDefinitions.xlsx::Parameters_SmokeBaselineExtend
+sweep:
+  profile: baseline
+  serving_engine: true
+  model_name: mistralai/Mistral-7B-v0.3
+  dtype: bfloat16
+  kv_cache_dtype: auto
+  gpu_memory_utilization: 0.9
+  max_model_len:
+    smoke: 128
+    baseline: 4096
+    extended: 4096
+  dataset_name: true
+  input_len:
+    smoke: 64
+    baseline: 2048
+    extended: 2048
+  output_len:
+    smoke: 16
+    baseline: 128
+    extended: 128
+  num_prompts:
+    smoke: 2
+    baseline: 96
+    extended: 224
+  concurrency:
+    smoke: 2
+    baseline: 8
+    extended: 8
+  seed: 0
+thresholds:
+  sustained_decode_throughput_under_cache_pressure_tokens_s_min: 0.0
+  time_to_first_token_ms_min: 0.0
+  time_per_output_token_under_high_kv_pressure_ms_min: 0.0
+  kv_cache_hbm_usage_gb_min: 0.0
+  kv_cache_hbm_capacity_utilization_min: 0.0

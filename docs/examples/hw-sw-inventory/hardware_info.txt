@@ -1,0 +1,606 @@
+================================================================================
+TITLE       : Workload Inventory Run - Hardware
+FILE        : hardware_info.txt
+HOST        : gpu-mi300x-example-host
+VENDOR      : AMD (MI300X detected via PCI)
+--------------------------------------------------------------------------------
+Thu Aug 13 17:01:47 UTC 2026
+================================================================================
+
+================================================================================
+DESCRIPTION : Commands To Be Run # Description
+--------------------------------------------------------------------------------
+date  # Current Date and Time
+hostnamectl  # Hostname & System Identity (VM/Host Details)
+lscpu | grep -E "Model name|Socket|Core|Thread|CPU\(s\)|MHz"  # CPU Model & Core Count
+numactl --hardware  # NUMA Topology & Memory Layout
+lsmem  # System Memory Total
+free -h  # Memory (RAM)
+dmidecode -t memory | grep Size  # Physical Memory Module Sizes
+df -h  # Disk usage
+lsblk -o NAME,SIZE,TYPE,MOUNTPOINT  # Block Devices & Mount Points
+dmidecode -t system | sed -n '/System Information/,/Family:/p'  # System Hardware Info (Manufacturer, Product, UUID)
+lspci  # PCI Device List
+lscpu  # CPU Architecture and Cache Info
+ip addr show  # Network Interface Configuration
+lsmod  # Loaded Kernel Modules
+cat /proc/cpuinfo | head -19  # CPU Details (long)
+lspci | grep -i accelerator  # AMD GPU Bus Address and Device ID
+rocminfo | grep gfx  # AMD GPU Architecture IDs (gfx)
+rocm-smi --showmeminfo vram  # AMD GPU Details (Model, VRAM)
+rocm-smi --showproductname  # AMD GPU Product SKU and Identification
+lspci -vv -d 1002: | grep -E 'AMD|LnkCap:|LnkSta:|Region'  # AMD GPU PCIe Link & Memory Regions
+rocm-smi  # AMD GPU Live Telemetry (Temp, Power, Clocks)
+lspci -vv -d 1002:  # AMD Full GPU PCI Details
+amd-smi static | head -30  # AMD GPU Hardware Identity
+rocminfo | grep Name  # AMD GPU/CPU Agent Names (ROCm Info)
+amd-smi  # AMD GPU Overview and Status
+dmesg | grep -Ei 'amdgpu|xgmi|kfd|rocm'  # AMD Kernel Boot Log - AMD/GPU Messages
+lspci -vv -s $(lspci | grep -i accelerator | awk '{print $1}' | head -1)  # AMD GPU PCI Config (Link, BARs, Driver Binding)
+
+================================================================================
+
+================================================================================
+DESCRIPTION : Current Date and Time
+COMMAND     : date
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+Thu Aug 13 17:01:48 UTC 2026
+================================================================================
+
+================================================================================
+DESCRIPTION : Hostname & System Identity (VM/Host Details)
+COMMAND     : hostnamectl
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+ Static hostname: gpu-mi300x-example-host
+       Icon name: computer-vm
+         Chassis: vm 🖴
+      Machine ID: a1b2c3d4e5f6478899aabbccddeeff00
+         Boot ID: fc2e4d58d77c498eb809c3503c5ce785
+  Virtualization: kvm
+Operating System: Ubuntu 24.04.4 LTS
+          Kernel: Linux 6.8.0-124-generic
+    Architecture: x86-64
+ Hardware Vendor: DigitalOcean
+  Hardware Model: Droplet
+Firmware Version: 20171212
+   Firmware Date: Tue 2017-12-12
+    Firmware Age: 8y 8month 1d
+================================================================================
+
+================================================================================
+DESCRIPTION : CPU Model & Core Count
+COMMAND     : lscpu | grep -E "Model name|Socket|Core|Thread|CPU\(s\)|MHz"
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+CPU(s):                                  20
+On-line CPU(s) list:                     0-19
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+BIOS Model name:                         pc-q35-6.1  CPU @ 2.0GHz
+Thread(s) per core:                      1
+Core(s) per socket:                      20
+Socket(s):                               1
+NUMA node0 CPU(s):                       0-19
+================================================================================
+
+================================================================================
+DESCRIPTION : NUMA Topology & Memory Layout
+COMMAND     : numactl --hardware
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+available: 1 nodes (0)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
+node 0 size: 241610 MB
+node 0 free: 240374 MB
+node distances:
+node   0 
+  0:  10 
+================================================================================
+
+================================================================================
+DESCRIPTION : System Memory Total
+COMMAND     : lsmem
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+RANGE                                  SIZE  STATE REMOVABLE BLOCK
+0x0000000000000000-0x000000007fffffff    2G online       yes     0
+0x0000000100000000-0x0000003c7fffffff  238G online       yes 2-120
+
+Memory block size:         2G
+Total online memory:     240G
+Total offline memory:      0B
+================================================================================
+
+================================================================================
+DESCRIPTION : Memory (RAM)
+COMMAND     : free -h
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+               total        used        free      shared  buff/cache   available
+Mem:           235Gi       2.3Gi       234Gi       4.2Mi       764Mi       233Gi
+Swap:             0B          0B          0B
+================================================================================
+
+================================================================================
+DESCRIPTION : Physical Memory Module Sizes
+COMMAND     : dmidecode -t memory | grep Size
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+	Size: 16 GB
+================================================================================
+
+================================================================================
+DESCRIPTION : Disk usage
+COMMAND     : df -h
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs            24G  1.2M   24G   1% /run
+/dev/vda1       697G  1.9G  695G   1% /
+tmpfs           118G     0  118G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M   64M  756M   8% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs            24G   12K   24G   1% /run/user/0
+================================================================================
+
+================================================================================
+DESCRIPTION : Block Devices & Mount Points
+COMMAND     : lsblk -o NAME,SIZE,TYPE,MOUNTPOINT
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+NAME     SIZE TYPE MOUNTPOINT
+vda      720G disk 
+├─vda1   719G part /
+├─vda14    4M part 
+├─vda15  106M part /boot/efi
+└─vda16  913M part /boot
+vdb      488K disk 
+vdc        5T disk 
+└─vdc1     5T part 
+================================================================================
+
+================================================================================
+DESCRIPTION : System Hardware Info (Manufacturer, Product, UUID)
+COMMAND     : dmidecode -t system | sed -n '/System Information/,/Family:/p'
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+System Information
+	Manufacturer: DigitalOcean
+	Product Name: Droplet
+	Version: 20171212
+	Serial Number: 000000001
+	UUID: a1b2c3d4-e5f6-4788-99aa-bbccddeeff00
+	Wake-up Type: Power Switch
+	SKU Number: Not Specified
+	Family: DigitalOcean_Droplet
+================================================================================
+
+================================================================================
+DESCRIPTION : PCI Device List
+COMMAND     : lspci
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+00:00.0 Host bridge: Intel Corporation 82G33/G31/P35/P31 Express DRAM Controller
+00:01.0 VGA compatible controller: Red Hat, Inc. Virtio 1.0 GPU (rev 01)
+00:02.0 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+00:02.1 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+00:02.2 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+00:02.3 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+00:02.4 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+00:02.5 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+00:02.6 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+00:02.7 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+00:03.0 Host bridge: Red Hat, Inc. QEMU PCIe Expander bridge
+00:1f.0 ISA bridge: Intel Corporation 82801IB (ICH9) LPC Interface Controller (rev 02)
+00:1f.2 SATA controller: Intel Corporation 82801IR/IO/IH (ICH9R/DO/DH) 6 port SATA Controller [AHCI mode] (rev 02)
+00:1f.3 SMBus: Intel Corporation 82801I (ICH9 Family) SMBus Controller (rev 02)
+01:00.0 Ethernet controller: Red Hat, Inc. Virtio 1.0 network device (rev 01)
+02:00.0 Ethernet controller: Red Hat, Inc. Virtio 1.0 network device (rev 01)
+03:00.0 SCSI storage controller: Red Hat, Inc. Virtio 1.0 SCSI (rev 01)
+04:00.0 USB controller: Red Hat, Inc. QEMU XHCI Host Controller (rev 01)
+05:00.0 SCSI storage controller: Red Hat, Inc. Virtio 1.0 block device (rev 01)
+06:00.0 SCSI storage controller: Red Hat, Inc. Virtio 1.0 block device (rev 01)
+07:00.0 SCSI storage controller: Red Hat, Inc. Virtio 1.0 block device (rev 01)
+08:00.0 Unclassified device [00ff]: Red Hat, Inc. Virtio 1.0 memory balloon (rev 01)
+80:00.0 PCI bridge: Red Hat, Inc. QEMU PCIe Root port
+81:00.0 PCI bridge: Texas Instruments XIO3130 PCI Express Switch (Upstream) (rev 02)
+82:00.0 PCI bridge: Texas Instruments XIO3130 PCI Express Switch (Downstream) (rev 01)
+83:00.0 Processing accelerators: Advanced Micro Devices, Inc. [AMD/ATI] Device 74b5
+================================================================================
+
+================================================================================
+DESCRIPTION : CPU Architecture and Cache Info
+COMMAND     : lscpu
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           46 bits physical, 57 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  20
+On-line CPU(s) list:                     0-19
+Vendor ID:                               GenuineIntel
+BIOS Vendor ID:                          QEMU
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+BIOS Model name:                         pc-q35-6.1  CPU @ 2.0GHz
+BIOS CPU family:                         1
+CPU family:                              6
+Model:                                   207
+Thread(s) per core:                      1
+Core(s) per socket:                      20
+Socket(s):                               1
+Stepping:                                2
+BogoMIPS:                                4600.00
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology cpuid tsc_known_freq pni pclmulqdq dtes64 vmx ssse3 fma cx16 pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx_vnni avx512_bf16 wbnoinvd arat vnmi avx512vbmi umip pku ospke waitpkg avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq la57 rdpid bus_lock_detect cldemote movdiri movdir64b fsrm md_clear serialize tsxldtrk avx512_fp16 arch_capabilities
+Virtualization:                          VT-x
+Hypervisor vendor:                       KVM
+Virtualization type:                     full
+L1d cache:                               640 KiB (20 instances)
+L1i cache:                               640 KiB (20 instances)
+L2 cache:                                80 MiB (20 instances)
+NUMA node(s):                            1
+NUMA node0 CPU(s):                       0-19
+Vulnerability Gather data sampling:      Not affected
+Vulnerability Indirect target selection: Mitigation; Aligned branch/return thunks
+Vulnerability Itlb multihit:             Not affected
+Vulnerability L1tf:                      Not affected
+Vulnerability Mds:                       Not affected
+Vulnerability Meltdown:                  Not affected
+Vulnerability Mmio stale data:           Unknown: No mitigations
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Not affected
+Vulnerability Spec rstack overflow:      Not affected
+Vulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS SW sequence; BHI SW loop, KVM SW loop
+Vulnerability Srbds:                     Not affected
+Vulnerability Tsa:                       Not affected
+Vulnerability Tsx async abort:           Mitigation; TSX disabled
+Vulnerability Vmscape:                   Not affected
+================================================================================
+
+================================================================================
+DESCRIPTION : Network Interface Configuration
+COMMAND     : ip addr show
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+    link/ether 02:00:00:00:00:01 brd ff:ff:ff:ff:ff:ff
+    altname enp1s0
+    inet 192.0.2.10/20 brd 192.0.2.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet 10.0.0.10/16 brd 10.0.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::200:ff:fe00:1/64 scope link 
+       valid_lft forever preferred_lft forever
+3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+    link/ether 02:00:00:00:00:02 brd ff:ff:ff:ff:ff:ff
+    altname enp2s0
+    inet 10.0.1.20/20 brd 10.0.15.255 scope global eth1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::200:ff:fe00:2/64 scope link 
+       valid_lft forever preferred_lft forever
+================================================================================
+
+================================================================================
+DESCRIPTION : Loaded Kernel Modules
+COMMAND     : lsmod
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+Module                  Size  Used by
+tls                   155648  0
+binfmt_misc            24576  1
+isofs                  61440  0
+kvm_intel             487424  0
+nls_iso8859_1          12288  1
+kvm                  1404928  1 kvm_intel
+irqbypass              12288  1 kvm
+pvpanic_mmio           12288  0
+input_leds             12288  0
+pvpanic                12288  1 pvpanic_mmio
+joydev                 32768  0
+serio_raw              20480  0
+sch_fq_codel           24576  21
+dm_multipath           45056  0
+msr                    12288  0
+efi_pstore             12288  0
+nfnetlink              20480  2
+dmi_sysfs              24576  0
+ip_tables              32768  0
+x_tables               65536  1 ip_tables
+autofs4                57344  2
+btrfs                2056192  0
+blake2b_generic        24576  0
+raid10                 77824  0
+raid456               196608  0
+async_raid6_recov      20480  1 raid456
+async_memcpy           16384  2 raid456,async_raid6_recov
+async_pq               20480  2 raid456,async_raid6_recov
+async_xor              16384  3 async_pq,raid456,async_raid6_recov
+async_tx               16384  5 async_pq,async_memcpy,async_xor,raid456,async_raid6_recov
+xor                    20480  2 async_xor,btrfs
+raid6_pq              126976  4 async_pq,btrfs,raid456,async_raid6_recov
+libcrc32c              12288  2 btrfs,raid456
+raid1                  61440  0
+raid0                  24576  0
+crct10dif_pclmul       12288  1
+crc32_pclmul           12288  0
+polyval_clmulni        12288  0
+polyval_generic        12288  1 polyval_clmulni
+ghash_clmulni_intel    16384  0
+ahci                   49152  0
+sha256_ssse3           32768  0
+vga16fb                32768  0
+sha1_ssse3             32768  0
+psmouse               217088  0
+vgastate               20480  1 vga16fb
+libahci                53248  1 ahci
+virtio_gpu             98304  0
+xhci_pci               24576  0
+xhci_pci_renesas       20480  1 xhci_pci
+virtio_dma_buf         12288  1 virtio_gpu
+aesni_intel           356352  0
+crypto_simd            16384  1 aesni_intel
+cryptd                 24576  2 crypto_simd,ghash_clmulni_intel
+================================================================================
+
+================================================================================
+DESCRIPTION : CPU Details (long)
+COMMAND     : cat /proc/cpuinfo | head -19
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 141)
+--------------------------------------------------------------------------------
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 207
+model name	: INTEL(R) XEON(R) PLATINUM 8568Y+
+stepping	: 2
+microcode	: 0x210002b3
+cpu MHz		: 2300.000
+cache size	: 4096 KB
+physical id	: 0
+siblings	: 20
+core id		: 0
+cpu cores	: 20
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 32
+wp		: yes
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Bus Address and Device ID
+COMMAND     : lspci | grep -i accelerator
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+83:00.0 Processing accelerators: Advanced Micro Devices, Inc. [AMD/ATI] Device 74b5
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Architecture IDs (gfx)
+COMMAND     : rocminfo | grep gfx
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: rocminfo: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Details (Model, VRAM)
+COMMAND     : rocm-smi --showmeminfo vram
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocm-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Product SKU and Identification
+COMMAND     : rocm-smi --showproductname
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocm-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU PCIe Link & Memory Regions
+COMMAND     : lspci -vv -d 1002: | grep -E 'AMD|LnkCap:|LnkSta:|Region'
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+83:00.0 Processing accelerators: Advanced Micro Devices, Inc. [AMD/ATI] Device 74b5
+	Subsystem: Advanced Micro Devices, Inc. [AMD/ATI] Device 74a1
+	Region 0: Memory at 4000000000 (64-bit, prefetchable) [size=256G]
+	Region 2: Memory at 8000000000 (64-bit, prefetchable) [size=2M]
+	Region 5: Memory at fd800000 (32-bit, non-prefetchable) [size=2M]
+		LnkCap:	Port #0, Speed 32GT/s, Width x16, ASPM L1, Exit Latency L1 <1us
+		LnkSta:	Speed 32GT/s, Width x16
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Live Telemetry (Temp, Power, Clocks)
+COMMAND     : rocm-smi
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: rocm-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Full GPU PCI Details
+COMMAND     : lspci -vv -d 1002:
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+83:00.0 Processing accelerators: Advanced Micro Devices, Inc. [AMD/ATI] Device 74b5
+	Subsystem: Advanced Micro Devices, Inc. [AMD/ATI] Device 74a1
+	Physical Slot: 0-9
+	Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	NUMA node: 0
+	Region 0: Memory at 4000000000 (64-bit, prefetchable) [size=256G]
+	Region 2: Memory at 8000000000 (64-bit, prefetchable) [size=2M]
+	Region 5: Memory at fd800000 (32-bit, non-prefetchable) [size=2M]
+	Capabilities: [64] Express (v2) Endpoint, MSI 00
+		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <64ns, L1 unlimited
+			ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset+ SlotPowerLimit 0W
+		DevCtl:	CorrErr- NonFatalErr- FatalErr- UnsupReq-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop- FLReset-
+			MaxPayload 128 bytes, MaxReadReq 128 bytes
+		DevSta:	CorrErr- NonFatalErr- FatalErr- UnsupReq- AuxPwr- TransPend-
+		LnkCap:	Port #0, Speed 32GT/s, Width x16, ASPM L1, Exit Latency L1 <1us
+			ClockPM- Surprise- LLActRep- BwNot- ASPMOptComp+
+		LnkCtl:	ASPM Disabled; RCB 64 bytes, Disabled- CommClk-
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 32GT/s, Width x16
+			TrErr- Train- SlotClk- DLActive- BWMgmt- ABWMgmt-
+		DevCap2: Completion Timeout: Range ABCD, TimeoutDis+ NROPrPrP- LTR-
+			 10BitTagComp+ 10BitTagReq+ OBFF Not Supported, ExtFmt+ EETLPPrefix+, MaxEETLPPrefixes 1
+			 EmergencyPowerReduction Form Factor Dev Specific, EmergencyPowerReductionInit-
+			 FRS- TPHComp- ExtTPHComp-
+			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- LTR- 10BitTagReq- OBFF Disabled,
+			 AtomicOpsCtl: ReqEn-
+		LnkCap2: Supported Link Speeds: 2.5-32GT/s, Crosslink- Retimer+ 2Retimers+ DRS-
+		LnkCtl2: Target Link Speed: 32GT/s, EnterCompliance- SpeedDis-
+			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
+			 Compliance Preset/De-emphasis: -6dB de-emphasis, 0dB preshoot
+		LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete- EqualizationPhase1-
+			 EqualizationPhase2- EqualizationPhase3- LinkEqualizationRequest-
+			 Retimer- 2Retimers- CrosslinkRes: unsupported
+	Capabilities: [a0] MSI: Enable- Count=1/2 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
+	Capabilities: [c0] MSI-X: Enable- Count=2 Masked-
+		Vector table: BAR=5 offset=00042000
+		PBA: BAR=5 offset=00043000
+	Capabilities: [100 v1] Vendor Specific Information: ID=0001 Rev=1 Len=010 <?>
+
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Hardware Identity
+COMMAND     : amd-smi static | head -30
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: amd-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU/CPU Agent Names (ROCm Info)
+COMMAND     : rocminfo | grep Name
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+bash: line 1: rocminfo: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU Overview and Status
+COMMAND     : amd-smi
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 127)
+--------------------------------------------------------------------------------
+bash: line 1: amd-smi: command not found
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD Kernel Boot Log - AMD/GPU Messages
+COMMAND     : dmesg | grep -Ei 'amdgpu|xgmi|kfd|rocm'
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : FAILED (exit code 1)
+--------------------------------------------------------------------------------
+================================================================================
+
+================================================================================
+DESCRIPTION : AMD GPU PCI Config (Link, BARs, Driver Binding)
+COMMAND     : lspci -vv -s $(lspci | grep -i accelerator | awk '{print $1}' | head -1)
+TIMESTAMP   : 2026-08-13T17:01:48Z
+STATUS      : SUCCESS
+--------------------------------------------------------------------------------
+83:00.0 Processing accelerators: Advanced Micro Devices, Inc. [AMD/ATI] Device 74b5
+	Subsystem: Advanced Micro Devices, Inc. [AMD/ATI] Device 74a1
+	Physical Slot: 0-9
+	Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	NUMA node: 0
+	Region 0: Memory at 4000000000 (64-bit, prefetchable) [size=256G]
+	Region 2: Memory at 8000000000 (64-bit, prefetchable) [size=2M]
+	Region 5: Memory at fd800000 (32-bit, non-prefetchable) [size=2M]
+	Capabilities: [64] Express (v2) Endpoint, MSI 00
+		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <64ns, L1 unlimited
+			ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset+ SlotPowerLimit 0W
+		DevCtl:	CorrErr- NonFatalErr- FatalErr- UnsupReq-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop- FLReset-
+			MaxPayload 128 bytes, MaxReadReq 128 bytes
+		DevSta:	CorrErr- NonFatalErr- FatalErr- UnsupReq- AuxPwr- TransPend-
+		LnkCap:	Port #0, Speed 32GT/s, Width x16, ASPM L1, Exit Latency L1 <1us
+			ClockPM- Surprise- LLActRep- BwNot- ASPMOptComp+
+		LnkCtl:	ASPM Disabled; RCB 64 bytes, Disabled- CommClk-
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 32GT/s, Width x16
+			TrErr- Train- SlotClk- DLActive- BWMgmt- ABWMgmt-
+		DevCap2: Completion Timeout: Range ABCD, TimeoutDis+ NROPrPrP- LTR-
+			 10BitTagComp+ 10BitTagReq+ OBFF Not Supported, ExtFmt+ EETLPPrefix+, MaxEETLPPrefixes 1
+			 EmergencyPowerReduction Form Factor Dev Specific, EmergencyPowerReductionInit-
+			 FRS- TPHComp- ExtTPHComp-
+			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- LTR- 10BitTagReq- OBFF Disabled,
+			 AtomicOpsCtl: ReqEn-
+		LnkCap2: Supported Link Speeds: 2.5-32GT/s, Crosslink- Retimer+ 2Retimers+ DRS-
+		LnkCtl2: Target Link Speed: 32GT/s, EnterCompliance- SpeedDis-
+			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
+			 Compliance Preset/De-emphasis: -6dB de-emphasis, 0dB preshoot
+		LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete- EqualizationPhase1-
+			 EqualizationPhase2- EqualizationPhase3- LinkEqualizationRequest-
+			 Retimer- 2Retimers- CrosslinkRes: unsupported
+	Capabilities: [a0] MSI: Enable- Count=1/2 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
+	Capabilities: [c0] MSI-X: Enable- Count=2 Masked-
+		Vector table: BAR=5 offset=00042000
+		PBA: BAR=5 offset=00043000
+	Capabilities: [100 v1] Vendor Specific Information: ID=0001 Rev=1 Len=010 <?>
+
+================================================================================
+

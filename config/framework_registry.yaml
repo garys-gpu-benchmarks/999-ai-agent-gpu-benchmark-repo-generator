@@ -1,0 +1,86 @@
+# Official Framework-name to setup-flag map. Setup skeletons must not invent
+# ad-hoc grep patterns; they call scripts/framework_registry.py.
+version: 1
+vendors:
+  nvidia:
+    flags:
+      BENCHMARK_INSTALL_PYTORCH:
+        include: [pytorch, torch]
+        exclude: [vllm, sglang]
+      BENCHMARK_INSTALL_TORCHVISION:
+        include: [torchvision, resnet]
+        implies: [BENCHMARK_INSTALL_PYTORCH]
+      BENCHMARK_INSTALL_JAX:
+        include: [jax]
+      BENCHMARK_INSTALL_TRANSFORMERS:
+        include: [transformers, huggingface, bert, distilbert]
+        implies: [BENCHMARK_INSTALL_PYTORCH]
+      BENCHMARK_INSTALL_VLLM:
+        include: [vllm]
+      BENCHMARK_INSTALL_SGLANG:
+        include: [sglang]
+      BENCHMARK_INSTALL_FIO:
+        include: [fio, flexible i/o]
+      BENCHMARK_INSTALL_IPERF:
+        include: [iperf3, iperf]
+      BENCHMARK_INSTALL_NCCL:
+        include: [nccl]
+  amd:
+    flags:
+      BENCHMARK_INSTALL_PYTORCH:
+        include: [pytorch]
+        exclude: [vllm]
+        or_workload_name:
+          - Silent Data
+          - Tensor Op
+          - Microkernel
+          - ResNet
+          - BERT
+          - DistilBERT
+          - JAX XLA
+          - GEMM / rocBLAS
+          - MIOpen Convolution
+      BENCHMARK_INSTALL_TORCHVISION:
+        include: [torchvision, resnet]
+      BENCHMARK_INSTALL_JAX:
+        include: [jax]
+      BENCHMARK_INSTALL_SGLANG:
+        include: [sglang]
+        implies: [BENCHMARK_INSTALL_AITER, BENCHMARK_COMPILE_SGLANG, BENCHMARK_INSTALL_TORCHVISION]
+      BENCHMARK_INSTALL_AITER:
+        include: [sglang, aiter]
+      BENCHMARK_COMPILE_SGLANG:
+        include: [sglang]
+      BENCHMARK_BUILD_FAISS_ROCM:
+        include: [faiss]
+      BENCHMARK_INSTALL_VLLM:
+        include: [vllm]
+      BENCHMARK_INSTALL_RVS:
+        include: [rvs]
+      BENCHMARK_INSTALL_AMD_SMI:
+        include: [amd-smi]
+      BENCHMARK_INSTALL_HUGGINGFACE:
+        include: [huggingface, hugging face, bert, distilbert]
+        exclude: [vllm, sglang]
+      BENCHMARK_INSTALL_NUMPY:
+        include: [gups, numpy]
+      BENCHMARK_INSTALL_LMBENCH:
+        include: [lmbench]
+      BENCHMARK_INSTALL_FIO:
+        include: [fio, flexible i/o]
+      BENCHMARK_INSTALL_IPERF:
+        include: [iperf]
+      BENCHMARK_INSTALL_PERF:
+        include: [linux pmu, perf, stress-ng]
+  cpu:
+    flags:
+      BENCHMARK_INSTALL_FIO:
+        include: [fio, flexible i/o]
+      BENCHMARK_INSTALL_IPERF:
+        include: [iperf3, iperf]
+      BENCHMARK_INSTALL_STRESS_NG:
+        include: [stress-ng]
+      BENCHMARK_INSTALL_LMBENCH:
+        include: [lmbench]
+      BENCHMARK_INSTALL_PERF:
+        include: [perf, linux perf, pmu]

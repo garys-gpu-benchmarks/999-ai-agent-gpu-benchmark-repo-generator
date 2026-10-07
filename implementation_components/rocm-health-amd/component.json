@@ -1,0 +1,43 @@
+{
+  "component_id": "rocm-health-amd",
+  "description": "AMD ROCm System Validation collector (clocks, temp, HSA, PCIe).",
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": [
+    "scripts/build.sh",
+    "thresholds"
+  ],
+  "verifies": [
+    "rocminfo",
+    "amd-smi",
+    "rocm-smi"
+  ],
+  "contracts": {
+    "skip_rvs_default": 0,
+    "compile_rocblas_bench": false,
+    "gemm_per_point": false,
+    "build_policy": "verify_tools"
+  },
+  "also_applies_to": [
+    "102",
+    "302"
+  ],
+  "overlay": [
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "ROCm System Validation (clocks, temp, etc.)"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ]
+}

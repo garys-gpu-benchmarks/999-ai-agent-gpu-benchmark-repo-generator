@@ -1,0 +1,20 @@
+{
+  "component_id": "rocm-tool-verify-build",
+  "description": "Mixin: verify-only build.sh for ROCm tool-inventory workloads that do not compile repo source.",
+  "role": "mixin",
+  "completeness": "thin",
+  "apply_when": {
+    "build_policy": "verify_tools",
+    "missing_overlay": "scripts/build.sh"
+  },
+  "provides": [
+    "scripts/build.sh"
+  ],
+  "does_not_provide": [
+    "scripts/collect_workload.py"
+  ],
+  "overlay": [
+    "scripts/build.sh"
+  ],
+  "selectors": []
+}

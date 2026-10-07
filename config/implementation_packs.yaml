@@ -1,0 +1,104 @@
+# Workload slot 1-32 → component directory ids (comma-separated).
+# This yaml is the only pack map. BenchmarkSpecDefinitions.xlsx has no
+# Implementation Pack column.
+# Slot N maps to workloads 100+N (24.04 AMD), 200+N (24.04 NVIDIA),
+# 300+N (26.04 AMD), and 400+N (26.04 NVIDIA).
+# Mixins (harness-self-check, rocblas-clients-build, rocm-tool-verify-build)
+# still apply via apply_when and are not listed here.
+packs:
+  1:
+    amd: system-config-amd
+    nvidia: system-config-nvidia
+  2:
+    amd: rocm-health-amd
+    nvidia: gpu-health-nvidia
+  3:
+    amd: system-stress-amd
+    nvidia: system-stress-nvidia
+  4:
+    amd: sdc-ecc-amd
+    nvidia: sdc-ecc-nvidia
+  5:
+    amd: pytorch-tensor-correctness-amd
+    nvidia: pytorch-tensor-correctness-nvidia
+  6:
+    amd: fio-nvme-amd
+    nvidia: fio-nvme-nvidia
+  7:
+    amd: stream-collect-amd,stream-reference
+    nvidia: stream-collect-nvidia,stream-reference
+  8:
+    amd: iperf3-amd
+    nvidia: iperf3-nvidia
+  9:
+    amd: multichase-numa-amd
+    nvidia: multichase-numa-amd
+  10:
+    amd: numa-cache-wrapper-amd,numa-cache-collector
+    nvidia: numa-cache-collector
+  11:
+    amd: linux-perf-pmu-amd
+    nvidia: linux-perf-pmu-nvidia
+  12:
+    amd: lmbench-amd
+    nvidia: lmbench-nvidia
+  13:
+    amd: gups-amd
+    nvidia: gups-nvidia
+  14:
+    amd: hipmemcpy-bandwidth-amd
+    nvidia: cuda-memcpy-nvidia
+  15:
+    amd: babelstream-hbm-amd
+    nvidia: babelstream-hbm-nvidia
+  16:
+    amd: rccl-bandwidth-amd
+    nvidia: nccl-bandwidth-nvidia
+  17:
+    amd: rocblas-gemm-amd
+    nvidia: cublas-gemm-nvidia
+  18:
+    amd: miopen-convolution-amd
+    nvidia: cudnn-convolution-nvidia
+  19:
+    amd: torch-micro-amd
+    nvidia: torch-micro-nvidia
+  20:
+    amd: linpack-rochpl-amd
+    nvidia: linpack-hpl-nvidia
+  21:
+    amd: resnet50-training-amd
+    nvidia: resnet50-training-nvidia
+  22:
+    amd: resnet50-inference-amd
+    nvidia: resnet50-inference-nvidia
+  23:
+    amd: bert-inference-amd
+    nvidia: bert-inference-nvidia
+  24:
+    amd: sdxl-diffusers-amd
+    nvidia: sdxl-diffusers-nvidia
+  25:
+    amd: distilbert-amd
+    nvidia: distilbert-nvidia
+  26:
+    amd: jax-xla-amd
+    nvidia: jax-xla-nvidia
+  27:
+    amd: vllm-kvcache-amd
+    nvidia: vllm-kvcache-nvidia
+  28:
+    amd: vllm-throughput-amd
+    nvidia: vllm-throughput-nvidia
+  29:
+    amd: vllm-token-generation-amd
+    nvidia: vllm-token-generation-nvidia
+  30:
+    amd: sglang-prompt-response-amd,sglang-prompt-parser-amd
+    nvidia: sglang-prompt-response-nvidia
+  31:
+    amd: sglang-serving-amd
+    nvidia: sglang-serving-nvidia
+  32:
+    amd: rag-faiss-end2end-amd
+    nvidia: rag-faiss-end2end-nvidia

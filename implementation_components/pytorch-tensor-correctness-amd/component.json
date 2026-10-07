@@ -1,0 +1,27 @@
+{
+  "component_id": "pytorch-tensor-correctness-amd",
+  "description": "AMD 105 tensor-op correctness vs CPU FP32. Uses chr(10) CSV.",
+  "overlay": [
+    "scripts/run_tensor_correctness.py",
+    "scripts/collect_workload.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "PyTorch Tensor Op Correctness Suite"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "AMD"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/run_tensor_correctness.py",
+    "scripts/collect_workload.py"
+  ],
+  "does_not_provide": []
+}

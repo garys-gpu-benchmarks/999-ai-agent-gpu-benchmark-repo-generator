@@ -1,0 +1,22 @@
+{
+  "component_id": "stream-reference",
+  "description": "Official STREAM C source plus vendor-neutral gcc OpenMP build.sh. Applies to AMD 107/307 and NVIDIA 207/407.",
+  "overlay": [
+    "src/stream.c",
+    "scripts/build.sh"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "STREAM - CPU (Copy/Scale/Add/Triad)"
+    }
+  ],
+  "role": "source",
+  "completeness": "thin",
+  "provides": [
+    "src/stream.c",
+    "scripts/build.sh"
+  ],
+  "does_not_provide": []
+}

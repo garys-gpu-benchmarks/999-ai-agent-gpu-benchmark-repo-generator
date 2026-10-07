@@ -1,0 +1,33 @@
+{
+  "component_id": "system-config-amd",
+  "skip_rvs_default": 0,
+  "smoke_duration_seconds": 5,
+  "forbidden_cli": [
+    "rvs -l"
+  ],
+  "required_metric_lines": [
+    "ROCm package mismatch count",
+    "driver-compliance",
+    "permission-error"
+  ],
+  "thresholds": {
+    "rocm_package_mismatch_count_min": 0,
+    "rocm_package_mismatch_count_max": 0,
+    "kernel_driver_mismatch_count_min": 0,
+    "kernel_driver_mismatch_count_max": 0,
+    "driver_compliance_percent_min": 100,
+    "driver_compliance_percent_max": 100,
+    "permission_error_count_min": 0,
+    "permission_error_count_max": 0
+  },
+  "overlay_immutable": [
+    "scripts/collect_workload.py"
+  ],
+  "agent_may_edit": [
+    "PRD.md",
+    "SPEC.md",
+    "README.md",
+    "requirements.txt",
+    "config/benchmark_config.yaml"
+  ]
+}

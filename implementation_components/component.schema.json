@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Implementation Component",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "component_id",
+    "description",
+    "overlay"
+  ],
+  "properties": {
+    "component_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "collector",
+        "parser",
+        "runner",
+        "source",
+        "build",
+        "mixin"
+      ]
+    },
+    "completeness": {
+      "type": "string",
+      "enum": [
+        "thin",
+        "closed"
+      ]
+    },
+    "provides": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "does_not_provide": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "verifies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "skip_rvs_default": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "compile_rocblas_bench": {
+          "type": "boolean"
+        },
+        "gemm_per_point": {
+          "type": "boolean"
+        },
+        "build_policy": {
+          "type": "string",
+          "enum": [
+            "verify_tools",
+            "compile_rocblas",
+            "overlay",
+            "none"
+          ]
+        },
+        "forbidden_cli": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "also_applies_to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9]+$"
+      }
+    },
+    "apply_when": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "always": {
+          "type": "boolean"
+        },
+        "compile_rocblas_bench": {
+          "type": "boolean"
+        },
+        "build_policy": {
+          "type": "string"
+        },
+        "missing_overlay": {
+          "type": "string"
+        },
+        "gpu_vendor": {
+          "type": "string"
+        }
+      }
+    },
+    "selectors": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "operator",
+          "value"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "type": "string",
+            "enum": [
+              "equals",
+              "contains",
+              "in",
+              "prefix"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "overlay": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    }
+  },
+  "anyOf": [
+    {
+      "properties": {
+        "role": {
+          "const": "mixin"
+        }
+      },
+      "required": [
+        "apply_when"
+      ]
+    },
+    {
+      "required": [
+        "selectors"
+      ],
+      "properties": {
+        "selectors": {
+          "minItems": 1
+        }
+      }
+    }
+  ]
+}

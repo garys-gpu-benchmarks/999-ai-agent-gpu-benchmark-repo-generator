@@ -1,0 +1,27 @@
+{
+  "component_id": "bert-inference-nvidia",
+  "description": "NVIDIA BERT inference collector and Hugging Face runner.",
+  "overlay": [
+    "scripts/collect_bert_infer.py",
+    "scripts/gpu-bench-bert-transformers-inference.py"
+  ],
+  "selectors": [
+    {
+      "field": "Workload Name",
+      "operator": "equals",
+      "value": "BERT Inference Sweep"
+    },
+    {
+      "field": "GPU Vendor",
+      "operator": "equals",
+      "value": "NVIDIA"
+    }
+  ],
+  "role": "collector",
+  "completeness": "thin",
+  "provides": [
+    "scripts/collect_bert_infer.py",
+    "scripts/gpu-bench-bert-transformers-inference.py"
+  ],
+  "does_not_provide": []
+}

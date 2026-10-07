@@ -1,0 +1,960 @@
+#!/usr/bin/env bash
+# File: scripts/templates/setup_rocm_reboot_skeleton.sh
+# Version: 1.3.0
+# Maintainer: AI Agent GPU Benchmark Repo Generator
+# Date: 2026-08-26
+# Description: Reusable local-only setup.sh skeleton for ROCm workloads with systemd reboot auto-resume.
+# Execution: Copy to generated repo root as setup.sh, then adapt workload skip flags if needed.
+# Options: --skip-rocm, --skip-rvs, --assume-yes, --resume-auto, --no-resume-auto, --resume-from-service, --help
+# Requirements: Ubuntu 24.04 or Ubuntu 26.04; bash; selected Python interpreter; sudo/systemd for ROCm installation.
+# Environment: Local benchmark host; remote execution is not supported.
+# Dependencies: scripts/lib/common.sh, scripts/lib/rocm_install.sh (dispatches to rocm_install_24_04.sh or rocm_install_26_04.sh), python3-venv, sqlite3, autotools
+# Variables: BENCHMARK_PYTHON, BENCHMARK_SKIP_ROCM, BENCHMARK_SKIP_RVS, BENCHMARK_BUILD_FAISS_ROCM, BENCHMARK_INSTALL_RUST, BENCHMARK_INSTALL_PYTORCH, BENCHMARK_INSTALL_TORCHVISION, BENCHMARK_INSTALL_AITER, BENCHMARK_INSTALL_SGLANG, SGLANG_SOURCE_DIR, SGLANG_REPO_URL, AITER_SOURCE_DIR, AITER_REPO_URL, ROCM_VERSION, UBUNTU_CODENAME, GFX_TARGET, ROCM_RELOAD_INSTEAD_OF_REBOOT, PYTORCH_ROCM_INDEX_URL, PYTORCH_VERSION, TORCHVISION_VERSION, PYTORCH_INSTALL_SPEC, TORCHVISION_INSTALL_SPEC
+# Repository: gpu-bench/sys-bench template
+# License: Apache-2.0
+
+set -euo pipefail
+
+if [[ -z "${HOME:-}" ]]; then
+  HOME="$(getent passwd "$(id -u)" | cut -d: -f6 2>/dev/null || true)"
+  HOME="${HOME:-/root}"
+  export HOME
+fi
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+export PATH="${HOME}/.cargo/bin:${PATH}"
+if [[ -r /etc/os-release ]]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+fi
+case "${VERSION_ID:-}" in
+  26.04*)
+    export ROCM_VERSION="${ROCM_VERSION:-7.14}"
+    export UBUNTU_CODENAME="${UBUNTU_CODENAME:-resolute}"
+    # download.pytorch.org/whl/rocm7.14 is empty; AMD publishes 7.14 wheels here.
+    PYTORCH_ROCM_INDEX_URL="${PYTORCH_ROCM_INDEX_URL:-https://repo.amd.com/rocm/whl-multi-arch/}"
+    PYTORCH_VERSION="${PYTORCH_VERSION:-2.12.0+rocm7.14.0}"
+    TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.27.0+rocm7.14.0}"
+    PYTORCH_INSTALL_SPEC="${PYTORCH_INSTALL_SPEC:-torch==${PYTORCH_VERSION} amd-torch-device-gfx942==${PYTORCH_VERSION}}"
+    TORCHVISION_INSTALL_SPEC="${TORCHVISION_INSTALL_SPEC:-torchvision==${TORCHVISION_VERSION}}"
+    ;;
+  *)
+    export ROCM_VERSION="${ROCM_VERSION:-7.2.1}"
+    export UBUNTU_CODENAME="${UBUNTU_CODENAME:-noble}"
+    PYTORCH_ROCM_INDEX_URL="${PYTORCH_ROCM_INDEX_URL:-https://download.pytorch.org/whl/rocm7.2}"
+    PYTORCH_VERSION="${PYTORCH_VERSION:-2.11.0+rocm7.2}"
+    TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.26.0+rocm7.2}"
+    PYTORCH_INSTALL_SPEC="${PYTORCH_INSTALL_SPEC:-torch==${PYTORCH_VERSION}}"
+    TORCHVISION_INSTALL_SPEC="${TORCHVISION_INSTALL_SPEC:-torchvision==${TORCHVISION_VERSION}}"
+    ;;
+esac
+export GFX_TARGET="${GFX_TARGET:-gfx942}"
+VLLM_WHEEL_INDEX_URL="${VLLM_WHEEL_INDEX_URL:-https://wheels.vllm.ai/rocm/}"
+# wheels.vllm.ai/rocm/ is still cp312/rocm723. Ubuntu 26.04 / Python 3.14 uses the AMD CDNA wheel.
+VLLM_AMD_CP314_WHEEL_URL="${VLLM_AMD_CP314_WHEEL_URL:-https://rocm.frameworks.amd.com/whl-multi-arch/vllm-cdna/vllm/vllm-0.23.1.dev1%2Brocm7.14.0.g9ddef7117.d20260715-cp314-cp314-linux_x86_64.whl}"
+FLASH_ATTN_AMD_CP314_WHEEL_URL="${FLASH_ATTN_AMD_CP314_WHEEL_URL:-https://rocm.frameworks.amd.com/whl-multi-arch/vllm-cdna/flash-attn/flash_attn-2.8.3-cp314-cp314-linux_x86_64.whl}"
+AITER_AMD_CP314_WHEEL_URL="${AITER_AMD_CP314_WHEEL_URL:-https://rocm.frameworks.amd.com/whl-multi-arch/vllm-cdna/amd-aiter/amd_aiter-0.1.13.post2.dev1%2Bgb32deb267-cp314-cp314-linux_x86_64.whl}"
+PYTORCH_VERSION="${PYTORCH_VERSION:-2.11.0+rocm7.2}"
+TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.26.0+rocm7.2}"
+PYTORCH_INSTALL_SPEC="${PYTORCH_INSTALL_SPEC:-torch==${PYTORCH_VERSION}}"
+TORCHVISION_INSTALL_SPEC="${TORCHVISION_INSTALL_SPEC:-torchvision==${TORCHVISION_VERSION}}"
+BENCHMARK_INSTALL_PYTORCH_WAS_SET="${BENCHMARK_INSTALL_PYTORCH+x}"
+BENCHMARK_INSTALL_AITER_WAS_SET="${BENCHMARK_INSTALL_AITER+x}"
+BENCHMARK_INSTALL_SGLANG_WAS_SET="${BENCHMARK_INSTALL_SGLANG+x}"
+BENCHMARK_COMPILE_SGLANG_WAS_SET="${BENCHMARK_COMPILE_SGLANG+x}"
+BENCHMARK_INSTALL_PYTORCH="${BENCHMARK_INSTALL_PYTORCH:-0}"
+BENCHMARK_INSTALL_TORCHVISION="${BENCHMARK_INSTALL_TORCHVISION:-0}"
+BENCHMARK_INSTALL_AITER="${BENCHMARK_INSTALL_AITER:-0}"
+BENCHMARK_INSTALL_SGLANG="${BENCHMARK_INSTALL_SGLANG:-0}"
+BENCHMARK_INSTALL_JAX="${BENCHMARK_INSTALL_JAX:-0}"
+BENCHMARK_INSTALL_RUST="${BENCHMARK_INSTALL_RUST:-0}"
+BENCHMARK_COMPILE_SGLANG="${BENCHMARK_COMPILE_SGLANG:-0}"
+BENCHMARK_BUILD_FAISS_ROCM="${BENCHMARK_BUILD_FAISS_ROCM:-0}"
+SGLANG_SOURCE_DIR="${SGLANG_SOURCE_DIR:-}"
+SGLANG_REPO_URL="${SGLANG_REPO_URL:-https://github.com/sgl-project/sglang.git}"
+# AMD ROCm 7.14 / cp314 pairing. main imports aiter.ops.shuffle.shuffle_scale,
+# which the published amd-aiter 0.1.13 wheel does not export.
+SGLANG_REPO_REF="${SGLANG_REPO_REF:-v0.5.13.post1}"
+AITER_SOURCE_DIR="${AITER_SOURCE_DIR:-}"
+AITER_REPO_URL="${AITER_REPO_URL:-https://github.com/ROCm/aiter.git}"
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_NAME="$(basename "${REPO_ROOT}")"
+cd "${REPO_ROOT}"
+if [[ -z "${SGLANG_SOURCE_DIR}" ]]; then
+  SGLANG_SOURCE_DIR="${REPO_ROOT}/third_party/sglang"
+elif [[ "${SGLANG_SOURCE_DIR}" != "${REPO_ROOT}/"* ]]; then
+  echo "[WARN] Ignoring external SGLANG_SOURCE_DIR=${SGLANG_SOURCE_DIR}; using ${REPO_ROOT}/third_party/sglang" >&2
+  SGLANG_SOURCE_DIR="${REPO_ROOT}/third_party/sglang"
+fi
+if [[ -z "${AITER_SOURCE_DIR}" ]]; then
+  AITER_SOURCE_DIR="${REPO_ROOT}/third_party/aiter"
+elif [[ "${AITER_SOURCE_DIR}" != "${REPO_ROOT}/"* ]]; then
+  echo "[WARN] Ignoring external AITER_SOURCE_DIR=${AITER_SOURCE_DIR}; using ${REPO_ROOT}/third_party/aiter" >&2
+  AITER_SOURCE_DIR="${REPO_ROOT}/third_party/aiter"
+fi
+if ! command -v python3 >/dev/null 2>&1; then
+  DEBIAN_FRONTEND=noninteractive apt-get update -y
+  DEBIAN_FRONTEND=noninteractive apt-get install -y python3
+fi
+if [[ -f benchmark_specification.json ]]; then
+  workload_framework="$("${PYTHON_BOOTSTRAP:-python3}" - <<'PY'
+import json
+from pathlib import Path
+fields = {
+    item.get("field_name", ""): item.get("value", "")
+    for item in json.loads(Path("benchmark_specification.json").read_text(encoding="utf-8"))
+}
+print(fields.get("Framework") or fields.get("Software Framework", ""))
+PY
+  )"
+  workload_name="$("${PYTHON_BOOTSTRAP:-python3}" - <<'PY'
+import json
+from pathlib import Path
+fields = {
+    item.get("field_name", ""): item.get("value", "")
+    for item in json.loads(Path("benchmark_specification.json").read_text(encoding="utf-8"))
+}
+print(fields.get("Workload Name", ""))
+PY
+  )"
+  if [[ -f "${REPO_ROOT}/scripts/framework_registry.py" ]]; then
+    eval "$("${PYTHON_BOOTSTRAP:-python3}" "${REPO_ROOT}/scripts/framework_registry.py" --spec benchmark_specification.json --vendor amd --format env)"
+    if [[ -n "${BENCHMARK_INSTALL_PYTORCH_WAS_SET}" ]]; then
+      BENCHMARK_INSTALL_PYTORCH="${BENCHMARK_INSTALL_PYTORCH_WAS_SET}"
+    fi
+    if [[ -n "${BENCHMARK_INSTALL_SGLANG_WAS_SET}" ]]; then
+      BENCHMARK_INSTALL_SGLANG="${BENCHMARK_INSTALL_SGLANG_WAS_SET}"
+    fi
+    if [[ -n "${BENCHMARK_INSTALL_AITER_WAS_SET}" ]]; then
+      BENCHMARK_INSTALL_AITER="${BENCHMARK_INSTALL_AITER_WAS_SET}"
+    fi
+    if [[ -n "${BENCHMARK_COMPILE_SGLANG_WAS_SET}" ]]; then
+      BENCHMARK_COMPILE_SGLANG="${BENCHMARK_COMPILE_SGLANG_WAS_SET}"
+    fi
+  else
+    if [[ -z "${BENCHMARK_INSTALL_PYTORCH_WAS_SET}" ]] &&
+       ! grep -Eiq '(^|[,[:space:]])vllm([,[:space:]]|$)' <<< "${workload_framework}"; then
+      if grep -Eiq '(^|[,[:space:]])pytorch([,-]|[[:space:]]|$)' <<< "${workload_framework}" ||
+         grep -Eiq 'Silent Data|Tensor Op|Microkernel|ResNet|BERT|DistilBERT|JAX XLA|GEMM / rocBLAS|MIOpen Convolution' <<< "${workload_name}"; then
+        BENCHMARK_INSTALL_PYTORCH=1
+      fi
+    fi
+    if grep -Eiq 'torchvision|ResNet' <<< "${workload_framework}${workload_name}"; then
+      BENCHMARK_INSTALL_TORCHVISION=1
+    fi
+    if grep -Eiq '(^|[,[:space:]])jax([,[:space:]]|$)' <<< "${workload_framework}"; then
+      BENCHMARK_INSTALL_JAX=1
+    fi
+    if grep -Eiq '(^|[,[:space:]])sglang([,[:space:]]|$)' <<< "${workload_framework}"; then
+      if [[ -z "${BENCHMARK_INSTALL_SGLANG_WAS_SET}" ]]; then
+        BENCHMARK_INSTALL_SGLANG=1
+      fi
+      if [[ -z "${BENCHMARK_INSTALL_AITER_WAS_SET}" ]]; then
+        BENCHMARK_INSTALL_AITER=1
+      fi
+      if [[ -z "${BENCHMARK_COMPILE_SGLANG_WAS_SET}" ]]; then
+        BENCHMARK_COMPILE_SGLANG=1
+      fi
+      BENCHMARK_INSTALL_TORCHVISION=1
+    fi
+    if grep -Eiq '(^|[,[:space:]])faiss([,[:space:]]|$)' <<< "${workload_framework}"; then
+      BENCHMARK_BUILD_FAISS_ROCM=1
+    fi
+  fi
+  if grep -Eiq '(^|[,[:space:]])vllm([,[:space:]]|$)' <<< "${workload_framework}"; then
+    case "${VERSION_ID:-}" in
+      26.04*)
+        # vLLM 0.23.1 AMD cp314 wheel pairs with torch 2.11, not 2.12.
+        PYTORCH_VERSION="2.11.0+rocm7.14.0"
+        TORCHVISION_VERSION="0.26.0+rocm7.14.0"
+        PYTORCH_INSTALL_SPEC="torch==${PYTORCH_VERSION} amd-torch-device-gfx942==${PYTORCH_VERSION}"
+        TORCHVISION_INSTALL_SPEC="torchvision==${TORCHVISION_VERSION}"
+        ;;
+    esac
+  fi
+fi
+export ROCM_SOURCE_ROOT="${ROCM_SOURCE_ROOT:-${REPO_ROOT}/third_party}"
+# Shared across every repo generated as a sibling under the same parent
+# directory (e.g. /root/<N>_<name>/), not per-repo. The first ROCm-torch
+# workload in a batch used to cold-download the ~6.2 GB wheel into
+# <repo>/.cache/pip; every later repo in the same batch then repeated that
+# full download into its own isolated cache instead of reusing pip's HTTP
+# cache from the first one -- this is what made the first torch consumer in
+# a batch prone to hitting the 60-minute setup/smoke gate before smoke ever
+# ran.
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$(dirname "${REPO_ROOT}")/.shared_pip_cache}"
+export PYTORCH_FIND_LINKS="${PYTORCH_FIND_LINKS:-$(dirname "${REPO_ROOT}")/.shared_pytorch_wheels}"
+export HF_HOME="${HF_HOME:-${REPO_ROOT}/.cache/huggingface}"
+export CARGO_HOME="${CARGO_HOME:-${REPO_ROOT}/.cache/cargo}"
+mkdir -p "${ROCM_SOURCE_ROOT}" "${PIP_CACHE_DIR}" "${PYTORCH_FIND_LINKS}" "${HF_HOME}" "${CARGO_HOME}"
+
+source scripts/lib/common.sh
+source scripts/lib/noninteractive_root.sh
+source scripts/lib/rocm_install.sh
+PYTHON_BOOTSTRAP="${BENCHMARK_PYTHON:-python3}"
+if [[ "${PYTHON_BOOTSTRAP}" == */* ]]; then
+  [[ -x "${PYTHON_BOOTSTRAP}" ]] || die "BENCHMARK_PYTHON is not executable: ${PYTHON_BOOTSTRAP}"
+else
+  PYTHON_BOOTSTRAP="$(command -v "${PYTHON_BOOTSTRAP}")" ||
+    die "BENCHMARK_PYTHON was not found: ${BENCHMARK_PYTHON:-python3}"
+fi
+PYTHON_TARGET_VERSION="$("${PYTHON_BOOTSTRAP}" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+VENV_ROOT="${REPO_ROOT}/.venv"
+PYTHON_BIN="${VENV_ROOT}/bin/python"
+
+SKIP_ROCM="${BENCHMARK_SKIP_ROCM:-0}"
+if [[ -n "${BENCHMARK_SKIP_RVS:-}" ]]; then
+  SKIP_RVS="${BENCHMARK_SKIP_RVS}"
+elif grep -Eiq '(^|[,[:space:]])rvs([,[:space:]]|$)' <<< "${workload_framework:-}"; then
+  SKIP_RVS=0
+else
+  SKIP_RVS=1
+fi
+ASSUME_YES=0
+RESUME_AUTO=1
+RESUME_FROM_SERVICE=0
+
+RESUME_SERVICE_NAME="${REPO_NAME}-setup-resume.service"
+RESUME_SERVICE_FILE="/etc/systemd/system/${RESUME_SERVICE_NAME}"
+RESUME_LOG="results/reboot_resume.log"
+RUNTIME_STAGE_FILE=".rocm_runtime_stage.env"
+STATUS_FILE="results/install_status.txt"
+COMMANDS_FILE="results/install_commands.txt"
+LOCK_FILE="${REPO_ROOT}/.setup.lock"
+
+# flock releases this descriptor automatically if setup is killed by reboot.
+exec 9>"${LOCK_FILE}"
+flock -n 9 || die "Another setup.sh invocation is already running; inspect ${RESUME_LOG}."
+
+usage() {
+  cat <<USAGE
+Usage: bash setup.sh [options]
+
+Options:
+  --skip-rocm          Skip ROCm runtime/repository setup.
+  --skip-rvs           Skip ROCm Validation Suite setup.
+  --assume-yes, -y     Suppress first-run interactive notice.
+  --resume-auto        Enable systemd auto-resume after reboot (default).
+  --no-resume-auto     Disable systemd auto-resume; operator reruns setup manually.
+  --resume-from-service
+                       Internal flag used by the systemd oneshot service.
+  --help               Show this help text.
+
+After the ROCm driver/firmware install, setup reloads the amdgpu driver instead
+of rebooting and reboots once only if the reload cannot be verified. Set
+ROCM_RELOAD_INSTEAD_OF_REBOOT=0 to always reboot.
+
+This generated repository is local-only. Remote execution flags are rejected.
+USAGE
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --skip-rocm) SKIP_ROCM=1 ;;
+    --skip-rvs) SKIP_RVS=1 ;;
+    --assume-yes|-y) ASSUME_YES=1 ;;
+    --resume-auto) RESUME_AUTO=1 ;;
+    --no-resume-auto) RESUME_AUTO=0 ;;
+    --resume-from-service) RESUME_FROM_SERVICE=1; ASSUME_YES=1 ;;
+    --exec-mode=*|--exec-mode|--remote|--ssh-host|--ssh-key|--remote-host)
+      die "Remote execution options are not supported; this repository is local-only."
+      ;;
+    --help) usage; exit 0 ;;
+    *) die "Unknown setup option: ${arg}" ;;
+  esac
+done
+
+run_privileged() {
+  # Root runs directly; otherwise sudo. A terminal stdin is replaced with
+  # /dev/null and SIGTTOU is ignored, so apt-get cannot stop on sudo's pty when
+  # output is redirected (the 26.04 benchmark-loop hang). Pipes/heredocs are kept.
+  run_noninteractive_root "$@"
+}
+
+install_status_sync_motd() {
+  local tmp
+  tmp="$(mktemp)"
+  {
+    echo "${REPO_NAME} setup status"
+    echo "========================================"
+    [[ -f "${STATUS_FILE}" ]] && cat "${STATUS_FILE}"
+    echo
+    echo "To see latest status on install, execute the following:"
+    echo "cat ${REPO_ROOT}/results/install_status.txt     # Shows recent status (static)"
+    echo "tail -f ${REPO_ROOT}/results/install_status.txt # Shows running status (dynamic)"
+    echo
+  } > "${tmp}"
+  run_privileged cp "${tmp}" /etc/motd 2>/dev/null || true
+  rm -f "${tmp}"
+}
+
+install_commands_log() {
+  local raw="$1"
+  local cmd
+  cmd="${raw%%#*}"
+  cmd="${cmd%"${cmd##*[![:space:]]}"}"
+  cmd="${cmd#"${cmd%%[![:space:]]*}"}"
+  [[ -n "${cmd}" ]] || return 0
+  case "${cmd}" in
+    sudo\ *|wget\ *|echo\ *|export\ *|git\ *|mkdir\ *|cd\ *|curl\ *|apt\ *|apt-get\ *|amdgpu-install\ *|./*)
+      mkdir -p results
+      printf '%s\n' "${cmd}" >> "${COMMANDS_FILE}"
+      ;;
+  esac
+}
+
+install_status_log_phase() {
+  mkdir -p results
+  echo "$(date -u '+%Y-%m-%d %H:%M:%S')  PHASE $*" >> "${STATUS_FILE}"
+  install_status_sync_motd
+}
+
+install_status_log_step() {
+  mkdir -p results
+  echo "$(date -u '+%Y-%m-%d %H:%M:%S')  STEP $1 $2" >> "${STATUS_FILE}"
+  install_commands_log "$2"
+  install_status_sync_motd
+}
+
+install_status_log_setup() {
+  mkdir -p results
+  echo "$(date -u '+%Y-%m-%d %H:%M:%S')  SETUP $*" >> "${STATUS_FILE}"
+  install_status_sync_motd
+}
+
+log_resume_event() {
+  mkdir -p results
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" >> "${RESUME_LOG}"
+}
+
+# rocm_add_repository adds the user to the render and video groups. Groups apply
+# at the next login. When the driver is reloaded instead of rebooting, nothing
+# forces that login, so the shell that ran setup.sh (and a benchmark loop that
+# continues in it) would get "permission denied" on /dev/kfd. Grant this user
+# access to the current GPU device nodes with an ACL. The ACL lasts until the
+# nodes are recreated (next reboot or driver reload); by then a new login has
+# the groups.
+grant_gpu_access_this_session() {
+  [[ "$(id -u)" -ne 0 ]] || return 0
+  local user
+  user="$(id -un)"
+  [[ " $(id -nG) " == *" render "* ]] && return 0
+  [[ " $(id -nG "${user}" 2>/dev/null) " == *" render "* ]] || return 0
+  local -a nodes=()
+  local node
+  for node in /dev/kfd /dev/dri/renderD* /dev/dri/card*; do
+    [[ -e "${node}" ]] && nodes+=("${node}")
+  done
+  (( ${#nodes[@]} > 0 )) || return 0
+  if command -v setfacl >/dev/null 2>&1 && run_privileged setfacl -m "u:${user}:rw" "${nodes[@]}"; then
+    install_status_log_phase "Granted ${user} GPU device access for this login; render/video groups apply at next login"
+  else
+    log_warn "${user} was added to the render and video groups, which apply at the next login."
+    log_warn "Log out and back in (or run: newgrp render) before running GPU benchmarks."
+  fi
+}
+
+install_resume_service() {
+  [[ "${RESUME_AUTO}" == 1 ]] || return 0
+  if ! command -v systemctl >/dev/null 2>&1; then
+    log_resume_event "systemctl unavailable; auto-resume not installed"
+    return 0
+  fi
+
+  run_privileged tee "${RESUME_SERVICE_FILE}" >/dev/null <<EOF
+[Unit]
+Description=Resume ${REPO_NAME} setup.sh after reboot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# ROCm setup and wheel installation can exceed systemd's default 90-second
+# startup timeout. The service must not report a successful setup as failed.
+TimeoutStartSec=infinity
+TimeoutStopSec=0
+KillMode=process
+Environment=HOME=/root
+Environment=BENCHMARK_REPO_ROOT=${REPO_ROOT}
+Environment=BENCHMARK_PYTHON=${PYTHON_BOOTSTRAP}
+WorkingDirectory=${REPO_ROOT}
+ExecStart=/bin/bash ${REPO_ROOT}/setup.sh --assume-yes --resume-auto --resume-from-service
+StandardOutput=append:${REPO_ROOT}/results/reboot_resume.log
+StandardError=append:${REPO_ROOT}/results/reboot_resume.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  run_privileged systemctl daemon-reload
+  run_privileged systemctl enable "${RESUME_SERVICE_NAME}"
+  local timeout_start
+  timeout_start="$(run_privileged systemctl show -p TimeoutStartUSec --value "${RESUME_SERVICE_NAME}" 2>/dev/null || true)"
+  if [[ "${timeout_start}" != "infinity" && "${timeout_start}" != "0" ]]; then
+    die "Resume service has unsafe TimeoutStartUSec=${timeout_start}; refusing reboot-capable setup."
+  fi
+  run_privileged systemctl is-enabled "${RESUME_SERVICE_NAME}" >/dev/null
+  install_status_log_phase "Auto-resume service enabled: ${RESUME_SERVICE_NAME}"
+  log_resume_event "Enabled ${RESUME_SERVICE_FILE}"
+}
+
+cleanup_resume_service() {
+  if command -v systemctl >/dev/null 2>&1 && run_privileged test -f "${RESUME_SERVICE_FILE}"; then
+    if [[ "${RESUME_FROM_SERVICE}" == 1 ]]; then
+      # This setup.sh IS the running start job of that unit. Reloading systemd
+      # after removing its file reloads the unit without TimeoutStartSec=infinity;
+      # systemd then times the start job out and SIGTERMs setup.sh (seen 26.04,
+      # 13:53:13, before .setup_state). Disable without a reload and remove the
+      # file; systemd drops the unit at its next reload or boot.
+      run_privileged systemctl disable --no-reload "${RESUME_SERVICE_NAME}" >/dev/null 2>&1 || true
+      run_privileged rm -f "${RESUME_SERVICE_FILE}"
+      install_status_log_phase "Auto-resume service removed (systemd reload deferred): ${RESUME_SERVICE_NAME}"
+      log_resume_event "Removed ${RESUME_SERVICE_FILE}; reload deferred while running as that service"
+      rm -f "${RUNTIME_STAGE_FILE}"
+      return 0
+    fi
+    run_privileged systemctl disable "${RESUME_SERVICE_NAME}" >/dev/null 2>&1 || true
+    run_privileged rm -f "${RESUME_SERVICE_FILE}"
+    run_privileged systemctl daemon-reload || true
+    # The unit was just disabled and removed above, so it is normally already
+    # unloaded and has nothing to reset — only call reset-failed when systemd
+    # actually has it recorded as failed, so we don't print a spurious
+    # "Unit ... not loaded" error in the common (non-reboot) case.
+    if run_privileged systemctl is-failed --quiet "${RESUME_SERVICE_NAME}" 2>/dev/null; then
+      run_privileged systemctl reset-failed "${RESUME_SERVICE_NAME}" >/dev/null 2>&1 || true
+    fi
+    install_status_log_phase "Auto-resume service removed: ${RESUME_SERVICE_NAME}"
+    log_resume_event "Removed ${RESUME_SERVICE_FILE}"
+  fi
+  rm -f "${RUNTIME_STAGE_FILE}"
+}
+
+mkdir -p results/raw results/parsed tests/fixtures
+if [[ ! -f "${STATUS_FILE}" || "${RESUME_FROM_SERVICE}" != 1 && ! -f "${RUNTIME_STAGE_FILE}" ]]; then
+  : > "${STATUS_FILE}"
+  : > "${COMMANDS_FILE}"
+fi
+
+install_status_log_phase "setup.sh start"
+
+if [[ "${ASSUME_YES}" != 1 && "${SKIP_ROCM}" != 1 ]]; then
+  echo "This setup reloads the amdgpu driver in place of a reboot. It reboots once"
+  echo "only if the reload cannot be verified (ROCM_RELOAD_INSTEAD_OF_REBOOT=0 always reboots)."
+  echo "Auto-resume after that reboot is enabled by default via systemd."
+  echo "Status is in results/install_status.txt and mirrored to /etc/motd."
+  echo "Executed install commands are listed in results/install_commands.txt."
+  echo "Completion is announced with wall message: setup.sh now complete"
+  echo "Press Enter to continue."
+  read -r _
+fi
+
+if [[ "${SKIP_ROCM}" != 1 ]]; then
+  # This must happen before any protected ROCm function can request a reboot.
+  install_resume_service
+fi
+
+if [[ "$(uname -s)" == "Linux" && -x /usr/bin/apt-get ]]; then
+  PYTHON_MINOR="${PYTHON_TARGET_VERSION}"
+  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get update -y
+  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    python3 python3-venv "python${PYTHON_MINOR}-venv" python3-pip ripgrep sqlite3 autoconf automake libtool libtool-bin m4 pkg-config flex bison cmake build-essential ninja-build numactl git curl protobuf-compiler libprotobuf-dev acl
+  # Ubuntu 26.04 hipcc (Clang 23) needs GCC 15 headers; GCC 16 has no <cstdlib> for HIP wrappers.
+  if [[ "${VERSION_ID:-}" == 26.04* ]]; then
+    run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y g++-15 gcc-15 || true
+  fi
+  if [[ "${BENCHMARK_INSTALL_RUST}" == 1 ]]; then
+    run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y rustc cargo
+  fi
+  if [[ "${BENCHMARK_BUILD_FAISS_ROCM:-0}" == 1 ]]; then
+    run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      libopenblas-dev libgflags-dev swig python3-dev "python${PYTHON_MINOR}-dev"
+  fi
+fi
+
+if [[ "${BENCHMARK_INSTALL_RUST}" == 1 ]]; then
+  if ! command -v rustup >/dev/null 2>&1; then
+    command -v curl >/dev/null 2>&1 || die "curl is required to install the current Rust toolchain."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+    export PATH="${HOME}/.cargo/bin:${PATH}"
+  fi
+  rustup default stable >/dev/null
+  command -v cargo >/dev/null 2>&1 || die "Cargo is unavailable after Rust installation."
+fi
+command -v protoc >/dev/null 2>&1 || die "protoc is unavailable after protobuf-compiler installation."
+
+if [[ "${SKIP_ROCM}" != 1 ]]; then
+  # Always process persisted runtime state before any "ROCm already present" shortcut.
+  # rocm-smi alone does not mean the GPU can initialize: a refreshed image can
+  # ship ROCm userspace with an empty /lib/firmware/amdgpu. The in-tree amdgpu
+  # driver then logs "Direct firmware load ... failed" and KFD has no GPU node.
+  # Treat missing amdgpu firmware as "runtime not installed" so the runtime
+  # install (firmware package + its single reboot) runs.
+  amdgpu_firmware_present=0
+  if compgen -G "/lib/firmware/updates/amdgpu/*" >/dev/null ||
+     compgen -G "/lib/firmware/amdgpu/*" >/dev/null; then
+    amdgpu_firmware_present=1
+  fi
+  if [[ -f "${RUNTIME_STAGE_FILE}" || ! -x /opt/rocm/bin/rocm-smi || "${amdgpu_firmware_present}" != 1 ]]; then
+    if [[ -x /opt/rocm/bin/rocm-smi && "${amdgpu_firmware_present}" != 1 ]]; then
+      log_resume_event "ROCm userspace present but no amdgpu firmware; running runtime install"
+    fi
+    rocm_install_runtime
+    # The protected installer persists stage3 before its single reboot and
+    # clears the stage file after that reboot. Do not advance to
+    # repository, RVS, or build phases while a runtime stage remains.
+    if [[ -f "${RUNTIME_STAGE_FILE}" ]]; then
+      install_status_log_phase "Runtime reboot requested; setup will resume automatically"
+      log_resume_event "Runtime stage remains; exiting until systemd resume"
+      exit 0
+    fi
+  fi
+  [[ -f /etc/apt/sources.list.d/rocm.list ]] || rocm_add_repository
+  grant_gpu_access_this_session
+else
+  install_status_log_step rocm "skipped by operator flag"
+fi
+
+if [[ "${SKIP_RVS}" != 1 ]]; then
+  command -v rvs >/dev/null 2>&1 || rocm_install_rvs
+else
+  install_status_log_step rvs "skipped by operator flag"
+fi
+
+if [[ -x "${VENV_ROOT}/bin/python" ]]; then
+  VENV_PYTHON_VERSION="$("${VENV_ROOT}/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+  [[ "${VENV_PYTHON_VERSION}" == "${PYTHON_TARGET_VERSION}" ]] ||
+    die "${VENV_ROOT} already uses Python ${VENV_PYTHON_VERSION}; remove it and rerun setup for Python ${PYTHON_TARGET_VERSION}."
+fi
+if [[ ! -x "${VENV_ROOT}/bin/python" ]] || ! "${VENV_ROOT}/bin/python" -c 'import pip' >/dev/null 2>&1; then
+  echo "[WARN] Existing Python venv is incomplete; recreating it with pip: ${VENV_ROOT}"
+  "${PYTHON_BOOTSTRAP}" -m venv --clear --upgrade-deps "${VENV_ROOT}" 2>/dev/null ||
+    "${PYTHON_BOOTSTRAP}" -m venv --clear "${VENV_ROOT}"
+fi
+[[ -x "${VENV_ROOT}/bin/python" ]] || die "Unable to create ${VENV_ROOT}/bin/python."
+if ! "${VENV_ROOT}/bin/python" -c 'import pip' >/dev/null 2>&1; then
+  die "Python venv has no pip after python3-venv installation; install the matching python3.X-venv package."
+fi
+source "${VENV_ROOT}/bin/activate"
+"${PYTHON_BIN}" -m pip install --upgrade pip
+if grep -Eq '^[[:space:]]*(torch|torchvision)(\[.*\])?([<>=].*)?$' requirements.txt; then
+  grep -Fq "download.pytorch.org/whl/rocm" requirements.txt || \
+    die "ROCm workload requirements must reference the official ROCm wheel index."
+fi
+"${PYTHON_BIN}" -m pip install -r requirements.txt --extra-index-url "${PYTORCH_ROCM_INDEX_URL}"
+install_status_log_step python "created ${VENV_ROOT} and installed requirements"
+
+install_workload_rocm_packages() {
+  local framework wheel_url
+  framework="$("${PYTHON_BIN}" - <<'PY'
+import json
+from pathlib import Path
+fields = {item.get("field_name", ""): item.get("value", "") for item in json.loads(Path("benchmark_specification.json").read_text())}
+print(fields.get("Framework") or fields.get("Software Framework", ""))
+PY
+)"
+  if grep -Eiq '(^|[,[:space:]])vllm([,[:space:]]|$)' <<< "${framework}"; then
+    wheel_url="$("${PYTHON_BIN}" - <<'PY'
+import json
+from pathlib import Path
+fields = {item.get("field_name", ""): item.get("value", "") for item in json.loads(Path("benchmark_specification.json").read_text())}
+print(fields.get("vLLM Wheel/Source Index", "").strip())
+PY
+)"
+    # Workbook 26.04 rows name the AMD CDNA index. Older rows name wheels.vllm.ai/rocm/.
+    case "${wheel_url}" in
+      https://wheels.vllm.ai/rocm/*|https://rocm.frameworks.amd.com/whl-multi-arch/vllm-cdna/*) ;;
+      *) die "ROCm vLLM workload lacks an official wheels.vllm.ai/rocm wheel URL." ;;
+    esac
+    case "${VERSION_ID:-}" in
+      26.04*)
+        if [[ "${wheel_url}" != *cp314* ]]; then
+          log_warn "Spec vLLM URL is not cp314; installing AMD ROCm 7.14 / cp314 wheel after the wheels.vllm.ai/rocm/ prefix check."
+          wheel_url="${VLLM_AMD_CP314_WHEEL_URL}"
+        fi
+        ;;
+    esac
+    "${PYTHON_BIN}" -m pip install \
+      --index-url "${PYTORCH_ROCM_INDEX_URL}" \
+      --extra-index-url https://pypi.org/simple \
+      ${PYTORCH_INSTALL_SPEC} ${TORCHVISION_INSTALL_SPEC}
+    "${PYTHON_BIN}" -m pip install --no-deps "${wheel_url}"
+    case "${VERSION_ID:-}" in
+      26.04*)
+        "${PYTHON_BIN}" -m pip install --no-deps "${FLASH_ATTN_AMD_CP314_WHEEL_URL}" ||
+          log_warn "AMD flash-attn wheel skipped"
+        ;;
+    esac
+    "${PYTHON_BIN}" -m pip install packaging
+    "${PYTHON_BIN}" - <<'PY' > "${REPO_ROOT}/.vllm_requirements.txt"
+from importlib.metadata import requires
+from packaging.requirements import Requirement
+
+excluded = {
+    "torch", "torchvision", "torchaudio",
+    "flash-attn", "flash_attn", "amd-aiter", "aiter", "amd-quark",
+}
+for raw in requires("vllm") or []:
+    requirement = Requirement(raw)
+    if requirement.marker is not None and not requirement.marker.evaluate():
+        continue
+    if requirement.name.lower() not in excluded:
+        print(str(requirement))
+PY
+    "${PYTHON_BIN}" -m pip install \
+      -r "${REPO_ROOT}/.vllm_requirements.txt" \
+      --extra-index-url "${VLLM_WHEEL_INDEX_URL}" \
+      --extra-index-url "${PYTORCH_ROCM_INDEX_URL}" ||
+      log_warn "vLLM extra-deps install was non-fatal; installing API-server extras next"
+    rm -f "${REPO_ROOT}/.vllm_requirements.txt"
+    # api_server.py imports uvloop on startup. Extra-deps can skip it when
+    # amd-quark>=0.8.99 is missing.
+    "${PYTHON_BIN}" -m pip install uvloop fastapi "aiohttp>=3.13.3" ||
+      die "vLLM API-server extras (uvloop/fastapi/aiohttp) failed."
+    "${PYTHON_BIN}" -c 'import vllm, uvloop; print(f"vLLM {vllm.__version__}")' ||
+      die "Official vLLM ROCm wheel verification failed."
+    # Importing torch first empties amdsmi handles on this stack. A .pth
+    # import runs before vLLM argparse so baseline/extended can infer ROCm.
+    # Do not install sitecustomize.py: Ubuntu's /usr/lib/python3.14 copy wins.
+    site_pkg="${VENV_ROOT}/lib/python${PYTHON_TARGET_VERSION}/site-packages"
+    src_custom="${REPO_ROOT}/scripts/templates/vllm_rocm_sitecustomize.py"
+    if [[ ! -f "${src_custom}" ]]; then
+      die "Missing ${src_custom}; published clones must ship scripts/templates/vllm_rocm_sitecustomize.py."
+    fi
+    cp -a "${src_custom}" "${site_pkg}/vllm_rocm_bootstrap.py"
+    printf '%s\n' 'import vllm_rocm_bootstrap' > "${site_pkg}/vllm_rocm_bootstrap.pth"
+    install_status_log_step vllm "installed and verified official ROCm wheel"
+  fi
+  if grep -Eiq '(^|[,[:space:]])amd-smi([,[:space:]]|$)' <<< "${framework}"; then
+    "${PYTHON_BIN}" -m pip install amdsmi
+    "${PYTHON_BIN}" -c 'import amdsmi' ||
+      die "amdsmi installation verification failed."
+    install_status_log_step amdsmi "installed and verified Python amdsmi package"
+  fi
+}
+
+if [[ "${SKIP_ROCM}" != 1 ]]; then
+  install_workload_rocm_packages
+else
+  install_status_log_step workload-packages "skipped with explicit --skip-rocm override"
+fi
+
+install_rocm_pytorch() {
+  local torch_version="${PYTORCH_VERSION}"
+  local torch_versions
+  torch_versions="$("${PYTHON_BIN}" -m pip index versions torch --index-url "${PYTORCH_ROCM_INDEX_URL}" 2>&1)" \
+    || die "Unable to query PyTorch versions at ${PYTORCH_ROCM_INDEX_URL}."
+  grep -Fq "${torch_version}" <<< "${torch_versions}" \
+    || die "PyTorch ${torch_version} is not published at ${PYTORCH_ROCM_INDEX_URL}."
+  read -r -a torch_packages <<< "${PYTORCH_INSTALL_SPEC}"
+  if [[ "${BENCHMARK_INSTALL_TORCHVISION}" == 1 ]]; then
+    local torchvision_versions
+    torchvision_versions="$("${PYTHON_BIN}" -m pip index versions torchvision --index-url "${PYTORCH_ROCM_INDEX_URL}" 2>&1)" \
+      || die "Unable to query torchvision versions at ${PYTORCH_ROCM_INDEX_URL}."
+    grep -Fq "${TORCHVISION_VERSION}" <<< "${torchvision_versions}" \
+      || die "torchvision ${TORCHVISION_VERSION} is not published at ${PYTORCH_ROCM_INDEX_URL}."
+    read -r -a torchvision_packages <<< "${TORCHVISION_INSTALL_SPEC}"
+    torch_packages+=("${torchvision_packages[@]}")
+  fi
+  local -a find_links_args=()
+  if [[ -n "${PYTORCH_FIND_LINKS:-}" && -d "${PYTORCH_FIND_LINKS}" ]]; then
+    find_links_args=(--find-links "${PYTORCH_FIND_LINKS}")
+  fi
+  "${PYTHON_BIN}" -m pip install --index-url "${PYTORCH_ROCM_INDEX_URL}" \
+    --extra-index-url https://pypi.org/simple "${find_links_args[@]}" "${torch_packages[@]}"
+  "${PYTHON_BIN}" - <<'PY'
+import torch
+if torch.version.hip is None or not torch.cuda.is_available():
+    raise SystemExit("PyTorch ROCm verification failed: HIP/GPU is unavailable")
+torch.zeros(1, device="cuda")
+name = torch.cuda.get_device_name(0)
+print(f"PyTorch {torch.__version__}; HIP {torch.version.hip}; GPU {name}; device_count={torch.cuda.device_count()}")
+PY
+  install_status_log_step pytorch "installed and verified ROCm wheel pair"
+}
+
+if [[ "${BENCHMARK_INSTALL_PYTORCH}" == 1 ]]; then
+  install_status_log_phase "Installing and verifying ROCm PyTorch wheels"
+  install_rocm_pytorch
+fi
+
+if [[ -n "${workload_framework:-}${workload_name:-}" ]]; then
+  if grep -Eiq 'hugging[[:space:][:punct:]]?face|bert|distilbert' <<< "${workload_framework}${workload_name}" &&
+     ! grep -Eiq '(^|[,[:space:]])vllm([,[:space:]]|$)|sglang' <<< "${workload_framework}"; then
+    if ! "${PYTHON_BIN}" -c "import transformers" >/dev/null 2>&1; then
+      "${PYTHON_BIN}" -m pip install transformers datasets
+    fi
+    "${PYTHON_BIN}" -c "import transformers; print(transformers.__version__)" ||
+      die "transformers installation verification failed."
+    install_status_log_step transformers "installed and verified Hugging Face transformers"
+  fi
+  if grep -Eiq 'gups|numpy' <<< "${workload_framework}${workload_name}"; then
+    "${PYTHON_BIN}" -m pip install numpy
+    "${PYTHON_BIN}" -c "import numpy; print(numpy.__version__)" ||
+      die "numpy installation verification failed."
+    install_status_log_step numpy "installed and verified numpy"
+  fi
+  if grep -Eiq 'lmbench' <<< "${workload_framework}${workload_name}"; then
+    if ! command -v lat_syscall >/dev/null 2>&1 && ! [[ -x /usr/lib/lmbench/bin/lat_syscall ]]; then
+      run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y lmbench ||
+        log_warn "lmbench package install deferred"
+    fi
+    install_status_log_step lmbench "lmbench binaries available or install attempted"
+  fi
+  if grep -Eiq 'fio|flexible i/o' <<< "${workload_framework}${workload_name}"; then
+    command -v fio >/dev/null 2>&1 || run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y fio ||
+      log_warn "fio package install deferred"
+    install_status_log_step fio "fio available or install attempted"
+  fi
+  if grep -Eiq 'iperf' <<< "${workload_framework}${workload_name}"; then
+    command -v iperf3 >/dev/null 2>&1 || run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y iperf3 ||
+      log_warn "iperf3 package install deferred"
+    install_status_log_step iperf3 "iperf3 available or install attempted"
+  fi
+  if grep -Eiq 'linux pmu|perf |stress-ng' <<< "${workload_framework}${workload_name}"; then
+    command -v stress-ng >/dev/null 2>&1 || run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y stress-ng ||
+      log_warn "stress-ng package install deferred"
+    if ! command -v perf >/dev/null 2>&1; then
+      run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y linux-tools-common linux-tools-generic \
+        "linux-tools-$(uname -r)" || log_warn "linux-tools/perf package install deferred"
+    fi
+    install_status_log_step perf "perf and stress-ng available or install attempted"
+  fi
+fi
+
+if [[ "${BENCHMARK_INSTALL_JAX}" == 1 ]]; then
+  # Plugin first, then jax/jaxlib from PyPI. Do not list jax in requirements.txt.
+  # Ubuntu 24.04 / ROCm 7.2 publishes jax-rocm7-plugin==0.10.0 on the ROCm 7.2
+  # wheel index. The +rocm7.14.0 build is only on the Ubuntu 26.04 AMD index.
+  if [[ "${VERSION_ID:-}" == 26.04* ]]; then
+    JAX_ROCM_PLUGIN_SPEC="jax_rocm7_plugin==0.10.0+rocm7.14.0"
+    JAX_ROCM_PJRT_SPEC="jax_rocm7_pjrt==0.10.0+rocm7.14.0"
+  else
+    JAX_ROCM_PLUGIN_SPEC="jax-rocm7-plugin==0.10.0"
+    JAX_ROCM_PJRT_SPEC="jax-rocm7-pjrt==0.10.0"
+  fi
+  "${PYTHON_BIN}" -m pip install --index-url "${PYTORCH_ROCM_INDEX_URL}" \
+    --extra-index-url https://pypi.org/simple \
+    "${JAX_ROCM_PLUGIN_SPEC}" "${JAX_ROCM_PJRT_SPEC}" ||
+    die "JAX ROCm plugin wheel install failed."
+  "${PYTHON_BIN}" -m pip install jax==0.10.0 jaxlib==0.10.0
+  "${PYTHON_BIN}" -c 'import jax, sys; devs=[d for d in jax.devices() if "cpu" not in str(d).lower()]; print(devs); sys.exit(0 if devs else 1)' ||
+    die "JAX ROCm verification failed."
+  install_status_log_step jax "installed and verified JAX ROCm plugin"
+fi
+
+if [[ "${BENCHMARK_INSTALL_AITER}" == 1 ]]; then
+  # Prefer the AMD-published ROCm 7.14 / cp314 wheel. Source compile from
+  # github.com/ROCm/aiter.git remains available when the wheel is missing.
+  # The wheel provides import aiter, not import amd_aiter.
+  # First import JIT-links module_aiter_core with -L.venv/lib -lamdhip64.
+  # TheRock ships the unversioned .so under /opt/rocm/lib.
+  export LIBRARY_PATH="/opt/rocm/lib:${LIBRARY_PATH:-}"
+  export LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+  if [[ -e /opt/rocm/lib/libamdhip64.so && ! -e "${VENV_ROOT}/lib/libamdhip64.so" ]]; then
+    ln -sfn /opt/rocm/lib/libamdhip64.so "${VENV_ROOT}/lib/libamdhip64.so"
+  fi
+  if ! "${PYTHON_BIN}" -c 'import aiter' >/dev/null 2>&1; then
+    "${PYTHON_BIN}" -m pip install "${AITER_AMD_CP314_WHEEL_URL}" || true
+  fi
+  if ! "${PYTHON_BIN}" -c 'import aiter' >/dev/null 2>&1; then
+    if [[ "${BENCHMARK_COMPILE_SGLANG}" == 1 ]]; then
+      if [[ ! -d "${AITER_SOURCE_DIR}/.git" ]]; then
+        git clone --recursive "${AITER_REPO_URL}" "${AITER_SOURCE_DIR}"
+      else
+        git -C "${AITER_SOURCE_DIR}" submodule sync
+        git -C "${AITER_SOURCE_DIR}" submodule update --init --recursive
+      fi
+      (
+        cd "${AITER_SOURCE_DIR}"
+        PYTORCH_ROCM_ARCH="${GFX_TARGET}" "${PYTHON_BIN}" setup.py develop
+      )
+    else
+      log_warn "AITER source clone skipped; install the AMD amd-aiter wheel so import aiter succeeds."
+    fi
+  fi
+  export SGLANG_USE_AITER=1
+  "${PYTHON_BIN}" -c 'import aiter, torch; assert torch.version.hip' || die "AITER installation failed or ROCm Torch was replaced."
+  install_status_log_step aiter "installed and verified AMD AITER kernels"
+fi
+
+if [[ "${BENCHMARK_INSTALL_SGLANG}" == 1 ]]; then
+  "${PYTHON_BIN}" -m pip uninstall -y nvidia-cutlass nvidia-cutlass-dsl cutlass >/dev/null 2>&1 || true
+  unset PYTHONPATH
+  unset PYTHONHOME
+  export PYTHONNOUSERSITE=1
+  if "${PYTHON_BIN}" -c 'import sglang, sgl_kernel' >/dev/null 2>&1; then
+    sglang_file="$("${PYTHON_BIN}" -c 'import sglang, pathlib; print(pathlib.Path(sglang.__file__).resolve())')"
+    case "${sglang_file}" in
+      "${REPO_ROOT}"/*) ;;
+      *)
+        die "sglang is imported from ${sglang_file}, not ${REPO_ROOT}. Unset PYTHONPATH and re-run setup so 131 does not reuse 130's tree."
+        ;;
+    esac
+    if ! "${PYTHON_BIN}" -c 'import sglang, aiter' >/tmp/sglang_import.err 2>&1; then
+      if grep -q "nanobind" /tmp/sglang_import.err 2>/dev/null; then
+        die "SGLang/AITER nanobind CUTLASS collision. Uninstall CUDA cutlass wheels and reinstall AMD-only aiter/sgl_kernel in this repo venv."
+      fi
+      die "import sglang, aiter failed. See /tmp/sglang_import.err"
+    fi
+    install_status_log_step sglang "already importable from this repo"
+  elif [[ "${BENCHMARK_COMPILE_SGLANG}" == 1 ]]; then
+    if [[ ! -d "${SGLANG_SOURCE_DIR}/.git" ]]; then
+      git clone --depth 1 --branch "${SGLANG_REPO_REF}" "${SGLANG_REPO_URL}" "${SGLANG_SOURCE_DIR}"
+    fi
+    # Current sglang.git moved sgl-kernel to python/sglang/kernels/aot.
+    SGL_KERNEL_SETUP=""
+    if [[ -f "${SGLANG_SOURCE_DIR}/sgl-kernel/setup_rocm.py" ]]; then
+      SGL_KERNEL_SETUP="${SGLANG_SOURCE_DIR}/sgl-kernel/setup_rocm.py"
+    elif [[ -f "${SGLANG_SOURCE_DIR}/python/sglang/kernels/aot/setup_rocm.py" ]]; then
+      SGL_KERNEL_SETUP="${SGLANG_SOURCE_DIR}/python/sglang/kernels/aot/setup_rocm.py"
+    fi
+    if [[ -n "${SGL_KERNEL_SETUP}" ]]; then
+      (
+        cd "$(dirname "${SGL_KERNEL_SETUP}")"
+        export AMDGPU_TARGET="${GFX_TARGET}"
+        export PYTORCH_ROCM_ARCH="${GFX_TARGET}"
+        # The venv ships a rocm_sdk_core hipcc that does not add /opt/rocm/include,
+        # so thrust/hipblas/hipsparse headers are invisible. Prefer the ROCm hipcc.
+        export PATH="/opt/rocm/bin:${PATH}"
+        export CPATH="/opt/rocm/include${CPATH:+:${CPATH}}"
+        export CPLUS_INCLUDE_PATH="/opt/rocm/include${CPLUS_INCLUDE_PATH:+:${CPLUS_INCLUDE_PATH}}"
+        export LIBRARY_PATH="/opt/rocm/lib:${LIBRARY_PATH:-}"
+        export LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+        # setup_rocm.py links with host g++, which does not accept Clang's
+        # --gcc-install-dir. Keep HIPCC_COMPILE_FLAGS_APPEND for hipcc only.
+        unset CXXFLAGS
+        "${PYTHON_BIN}" setup_rocm.py install
+      )
+    else
+      log_warn "sgl-kernel setup_rocm.py not in this SGLang tree; installing the HIP python package only"
+    fi
+    if [[ -f "${SGLANG_SOURCE_DIR}/python/pyproject_other.toml" ]]; then
+      cp "${SGLANG_SOURCE_DIR}/python/pyproject_other.toml" \
+        "${SGLANG_SOURCE_DIR}/python/pyproject.toml"
+    fi
+    # Current setup.py requires cargo unless Rust extensions are skipped.
+    # all_hip extras (wave-lang, st_attn, petit_kernel) still lack cp314 wheels.
+    export SGLANG_BUILD_RUST_EXTS="${SGLANG_BUILD_RUST_EXTS:-none}"
+    "${PYTHON_BIN}" -m pip install -e "${SGLANG_SOURCE_DIR}/python[srt_empty]" ||
+      "${PYTHON_BIN}" -m pip install -e "${SGLANG_SOURCE_DIR}/python"
+    if ! "${PYTHON_BIN}" -c 'import sglang' >/dev/null 2>&1; then
+      "${PYTHON_BIN}" -m pip install -e "${SGLANG_SOURCE_DIR}/python"
+    fi
+    # launch_server imports these; skip outlines (outlines_core needs cargo, no cp314 wheel).
+    # jsonschema is required by serving_chat; --help can pass while launch_server import fails.
+    "${PYTHON_BIN}" -m pip install "xgrammar==0.2.1" "timm==1.0.16" compressed-tensors \
+      orjson pybase64 starlette pyzmq openai uvicorn fastapi dill \
+      partial_json_parser sentencepiece msgspec requests setproctitle \
+      packaging numpy pyyaml tqdm aiohttp ipython jsonschema \
+      soundfile python-multipart ||
+      log_warn "SGLang runtime extras install deferred"
+    if [[ "${BENCHMARK_INSTALL_PYTORCH}" == 1 ]]; then
+      "${PYTHON_BIN}" -m pip uninstall -y nvidia-cublas nvidia-cuda-runtime nvidia-cudnn-cu13 \
+        nvidia-cufft nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse \
+        nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvjitlink nvidia-nvshmem-cu13 \
+        nvidia-nvtx nvidia-cuda-cupti nvidia-cuda-nvrtc cuda-toolkit cuda-bindings \
+        cuda-pathfinder >/dev/null 2>&1 || true
+      install_rocm_pytorch
+    fi
+    "${PYTHON_BIN}" -c 'import sglang' || die "SGLang installation failed."
+    "${PYTHON_BIN}" -c 'import sgl_kernel' || die "sgl_kernel ROCm compile failed."
+    if ! "${PYTHON_BIN}" -c 'import sglang, aiter' >/tmp/sglang_import.err 2>&1; then
+      if grep -q "nanobind" /tmp/sglang_import.err 2>/dev/null; then
+        die "SGLang/AITER nanobind CUTLASS collision. Uninstall CUDA cutlass wheels and reinstall AMD-only aiter/sgl_kernel in this repo venv."
+      fi
+      die "import sglang, aiter failed. See /tmp/sglang_import.err"
+    fi
+    install_status_log_step sglang "installed and verified SGLang from the python subdirectory"
+  else
+    die "SGLang is not importable. There is no proven ROCm 7.14/cp314 wheel. Re-run setup with BENCHMARK_COMPILE_SGLANG=1 (the default for SGLang workloads) or install a ROCm SGLang wheel. Smoke-only hosts may set BENCHMARK_INSTALL_SGLANG=0, but baseline/extended will fail."
+  fi
+  # Already-importable and compile paths both skip launch_server extras unless we
+  # run them here. Missing pyzmq dies at import zmq. New transformers already
+  # registered qwen3_asr, so SGLang AutoConfig.register raises ValueError.
+  "${PYTHON_BIN}" -m pip install orjson pybase64 starlette pyzmq openai uvicorn fastapi \
+    dill partial_json_parser sentencepiece uvloop gguf msgspec requests setproctitle \
+    packaging numpy pyyaml tqdm aiohttp ipython jsonschema \
+    soundfile python-multipart ||
+    die "SGLang launch extras failed to install."
+  "${PYTHON_BIN}" - <<'PY'
+from pathlib import Path
+import re
+import sglang
+root = Path(sglang.__file__).resolve().parent
+patched = 0
+pat = re.compile(r'AutoConfig\.register\(("qwen3_asr[^"]*")\s*,\s*([A-Za-z0-9_]+)\)')
+for path in root.rglob("qwen3_asr.py"):
+    text = path.read_text(encoding="utf-8")
+    new = pat.sub(r"AutoConfig.register(\1, \2, exist_ok=True)", text)
+    if new != text:
+        path.write_text(new, encoding="utf-8")
+        patched += 1
+print(f"qwen3_asr exist_ok patches: {patched}")
+PY
+  "${PYTHON_BIN}" -c 'import zmq, orjson, starlette, pybase64, openai, dill, msgspec, jsonschema' ||
+    die "SGLang launch extras are not importable (need zmq, orjson, starlette, pybase64, openai, dill, msgspec, jsonschema)."
+  if [[ -f "${REPO_ROOT}/scripts/patch_aiter_gfx1250_optional.py" ]]; then
+    "${PYTHON_BIN}" "${REPO_ROOT}/scripts/patch_aiter_gfx1250_optional.py" ||
+      die "AITER gfx1250 optional-import patch failed."
+  fi
+  "${PYTHON_BIN}" -m sglang.launch_server --help >/dev/null ||
+    die "sglang.launch_server is not importable."
+  "${PYTHON_BIN}" -c 'from sglang.srt.entrypoints.http_server import launch_server' ||
+    die "sglang.srt.entrypoints.http_server.launch_server is not importable (install jsonschema)."
+fi
+
+# Torch 2.11/2.12 on this host report device_count=0 after HIP init.
+# Cache amdsmi handles so SGLang can see the MI300X (vLLM has its own copy).
+if [[ "${BENCHMARK_INSTALL_SGLANG}" == 1 ]]; then
+  site_pkg="${VENV_ROOT}/lib/python${PYTHON_TARGET_VERSION}/site-packages"
+  src_custom="${REPO_ROOT}/scripts/templates/vllm_rocm_sitecustomize.py"
+  if [[ ! -f "${src_custom}" ]]; then
+    die "Missing ${src_custom}; published clones must ship scripts/templates/vllm_rocm_sitecustomize.py."
+  fi
+  cp -a "${src_custom}" "${site_pkg}/vllm_rocm_bootstrap.py"
+  printf '%s\n' 'import vllm_rocm_bootstrap' > "${site_pkg}/vllm_rocm_bootstrap.pth"
+fi
+
+if [[ "${BENCHMARK_INSTALL_PYTORCH}" == 1 && "${BENCHMARK_INSTALL_SGLANG}" == 1 ]]; then
+  # Framework dependency resolution may replace ROCm torch with a CUDA wheel.
+  # Restore and verify the operator-selected ROCm pair before completion.
+  install_rocm_pytorch
+fi
+
+if [[ "${BENCHMARK_BUILD_FAISS_ROCM}" == 1 ]]; then
+  # Official GPU path remains bash scripts/build_faiss_rocm.sh
+  # (FAISS_ENABLE_GPU=ON, FAISS_ENABLE_ROCM=ON). Smoke is not gated on that
+  # compile; faiss-cpu provides IndexFlatL2.
+  if ! "${PYTHON_BIN}" -c 'import faiss' >/dev/null 2>&1; then
+    log_warn "FAISS ROCm source compile deferred; installing faiss-cpu so smoke can IndexFlatL2."
+    "${PYTHON_BIN}" -m pip install faiss-cpu || true
+  fi
+  "${PYTHON_BIN}" -c 'import faiss; print("FAISS", getattr(faiss, "__version__", "ok")); print("StandardGpuResources", hasattr(faiss, "StandardGpuResources"))' \
+    || die "FAISS import verification failed."
+  install_status_log_step faiss "installed and verified FAISS Python module"
+  "${PYTHON_BIN}" -m pip install sentence-transformers llama-index-core datasets || log_warn "RAG extra Python packages deferred"
+  if [[ "${BENCHMARK_INSTALL_PYTORCH}" == 1 ]]; then
+    install_rocm_pytorch
+  fi
+fi
+
+if [[ -f scripts/install_rag_amd.sh ]]; then
+  # Overlay helper: real squad_v2 + BGE + Mistral prefetch. Do not install CUDA torch.
+  bash scripts/install_rag_amd.sh
+fi
+if [[ -f scripts/install_rag_nvidia.sh ]]; then
+  bash scripts/install_rag_nvidia.sh
+fi
+
+if [[ -f scripts/build.sh ]]; then
+  bash scripts/build.sh
+fi
+# Mark setup complete before touching the resume service, so a signal during
+# cleanup cannot leave a fully installed repo without .setup_state.
+install_status_log_setup "complete"
+touch .setup_state
+if ! cleanup_resume_service; then
+  log_warn "Setup completed, but resume-service cleanup was deferred; rerun setup.sh to retry cleanup."
+fi
+install_status_sync_motd
+command -v wall >/dev/null 2>&1 && echo "setup.sh now complete" | wall || true
+log_pass "setup.sh now complete"
