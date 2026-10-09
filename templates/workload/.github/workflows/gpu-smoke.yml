@@ -1,0 +1,32 @@
+# Thin caller generated from the CI contract (config/ci_contract.yaml in the
+# generator). The GPU steps live in the shared reusable workflow:
+# https://github.com/__CI_OWNER__/__CI_SHARED_REPO__
+name: GPU Smoke Benchmark
+
+# Manual only. Never triggered by pull requests: code from a fork must not
+# run on the self-hosted GPU runner.
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Benchmark profile to run
+        type: choice
+        options: __PROFILE_OPTIONS__
+        default: __PROFILE_DEFAULT__
+
+permissions:
+  contents: read
+
+# One GPU run per repository at a time. A second click waits for the running
+# benchmark instead of killing it part-way through.
+concurrency:
+  group: gpu-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  gpu:
+    uses: __CI_OWNER__/__CI_SHARED_REPO__/.github/workflows/__GPU_WORKFLOW__@__CI_REF__
+    with:
+      vendor: __VENDOR__
+      os_label: __OS_LABEL__
+      profile: ${{ inputs.profile }}

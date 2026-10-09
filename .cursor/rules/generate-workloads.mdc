@@ -1,0 +1,20 @@
+---
+description: Generate benchmark workloads from a three-line operator prompt
+alwaysApply: true
+---
+
+# Workload generation
+
+When the user attaches `docs/AI_AGENT_INSTRUCTIONS.md` and asks to generate workloads, follow that file. The chat only needs a `Generate workloads ...` line and, for a VM run, one real `ssh -i <key> root@<IPv4>` line. Extra sentences are optional.
+
+This generator tree is the only template. Do not read or copy any other `TEMPLATE_*` directory. No `Legacy:` line means legacy mode is off. Do not refresh the VM unless the prompt explicitly confirms a refresh.
+
+`through`, `to`, and `-` are inclusive. Repositories are created in the parent of this generator, even when Cursor's open folder is this generator. On the VM they install only under `/opt/benchmarks/<Workload Number>-<Repo Name>`. Do not use `/root` or `/opt/workloads`. Every `run_benchmark.sh` run appends to `/var/opt/benchmarks/runtime_ledger.csv`.
+
+The only generation action is to save the chat text as the submitted-prompt artifact, then run from this generator directory:
+
+```bash
+python3 scripts/run_from_prompt.py --prompt-file <SUBMITTED_PROMPT_FILE>
+```
+
+Do not pass `--remote-root`, `--project-root`, or `--template-root`. Do not reimplement copy, setup, or smoke. Continue until every requested workload is recorded.

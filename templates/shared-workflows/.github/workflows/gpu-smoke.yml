@@ -1,0 +1,185 @@
+# Reusable GPU benchmark run on a self-hosted runner.
+# Called from each workload's .github/workflows/gpu-smoke.yml:
+#   uses: __CI_OWNER__/__CI_SHARED_REPO__/.github/workflows/gpu-smoke.yml@__CI_REF__
+#
+# Safety: callers trigger this only through workflow_dispatch (a person clicks
+# "Run workflow"). It must never be reachable from pull_request, because a
+# fork's code would then run on your hardware.
+#
+# Runner expectations (see README.md in this repository):
+#   - registered at the organization level with labels
+#     [self-hosted, gpu, <vendor>, <os_label>], e.g. [self-hosted, gpu, amd, ubu2404]
+#   - GPU driver and ROCm/CUDA already installed (pre-provisioned); this
+#     workflow verifies them and never installs a host GPU stack
+#   - one runner agent per GPU host, so a host runs one benchmark at a time
+#   - passwordless sudo for the runner user, used only the first time a
+#     workload's setup.sh builds its repository-local .venv
+name: GPU Smoke
+
+on:
+  workflow_call:
+    inputs:
+      vendor:
+        description: GPU vendor (__VENDOR_CHOICES__); selects the runner
+        required: true
+        type: string
+      os_label:
+        description: OS label (__OS_LABEL_CHOICES__); selects the runner
+        required: true
+        type: string
+      profile:
+        description: Benchmark profile (__PROFILE_CHOICES__)
+        required: false
+        type: string
+        default: __PROFILE_DEFAULT__
+
+permissions:
+  contents: read
+
+jobs:
+  gpu:
+    name: gpu (${{ inputs.vendor }} / ${{ inputs.os_label }} / ${{ inputs.profile }})
+    runs-on: [self-hosted, gpu, "${{ inputs.vendor }}", "${{ inputs.os_label }}"]
+    timeout-minutes: __GPU_TIMEOUT__
+    defaults:
+      run:
+        shell: bash
+    env:
+      VENDOR: ${{ inputs.vendor }}
+      OS_LABEL: ${{ inputs.os_label }}
+      PROFILE: ${{ inputs.profile }}
+    steps:
+      - name: Check inputs
+        run: |
+          case " __VENDOR_CHOICES__ " in *" ${VENDOR} "*) ;; *) echo "::error::vendor '${VENDOR}' is not one of: __VENDOR_CHOICES__"; exit 1 ;; esac
+          case " __OS_LABEL_CHOICES__ " in *" ${OS_LABEL} "*) ;; *) echo "::error::os_label '${OS_LABEL}' is not one of: __OS_LABEL_CHOICES__"; exit 1 ;; esac
+          case " __PROFILE_CHOICES__ " in *" ${PROFILE} "*) ;; *) echo "::error::profile '${PROFILE}' is not one of: __PROFILE_CHOICES__"; exit 1 ;; esac
+
+      # clean: false keeps the git-ignored .venv and .setup_state from earlier
+      # runs on this runner, so a workload's setup runs once and is reused
+      # instead of reinstalling on every run.
+      - uses: actions/checkout@v7
+        with:
+          clean: false
+          persist-credentials: false
+
+      - name: Verify pre-provisioned GPU stack (installs nothing)
+        run: |
+          os_release="$(. /etc/os-release && echo "${VERSION_ID}")"
+          expected="${OS_LABEL#ubu}"; expected="${expected:0:2}.${expected:2:2}"
+          if [[ "${os_release}" != "${expected}" ]]; then
+            echo "::error::runner reports Ubuntu ${os_release}, but this job is labeled ${OS_LABEL}"
+            exit 1
+          fi
+          if [[ "${VENDOR}" == "amd" ]]; then
+            command -v rocminfo >/dev/null || { echo "::error::rocminfo not found; provision ROCm on this runner first"; exit 1; }
+            rocminfo | grep -m1 -E 'Name:[[:space:]]+gfx' || { echo "::error::rocminfo lists no gfx GPU agent"; exit 1; }
+            command -v rocm-smi >/dev/null && rocm-smi --showproductname || true
+          else
+            command -v nvidia-smi >/dev/null || { echo "::error::nvidia-smi not found; provision the NVIDIA driver on this runner first"; exit 1; }
+            nvidia-smi -L
+          fi
+          echo "GPU stack present on $(hostname) (${VENDOR}, Ubuntu ${os_release})."
+
+      - name: Capture environment
+        run: |
+          mkdir -p results
+          python3 - <<'PY'
+          import json
+          import os
+          import platform
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          def run(cmd):
+              try:
+                  out = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)
+                  return out.stdout.strip() or out.stderr.strip()
+              except Exception as exc:  # recorded, never fatal
+                  return f"unavailable: {exc}"
+
+          def read(path):
+              p = Path(path)
+              return p.read_text(encoding="utf-8", errors="replace").strip() if p.is_file() else ""
+
+          vendor = os.environ["VENDOR"]
+          env = {
+              "captured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+              "repository": os.environ.get("GITHUB_REPOSITORY", ""),
+              "commit": os.environ.get("GITHUB_SHA", ""),
+              "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+              "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF", ""),
+              "runner_name": os.environ.get("RUNNER_NAME", ""),
+              "vendor": vendor,
+              "os_label": os.environ["OS_LABEL"],
+              "profile": os.environ["PROFILE"],
+              "hostname": platform.node(),
+              "kernel": platform.release(),
+              "os_release": run(". /etc/os-release && echo \"$PRETTY_NAME\""),
+              "cpu_model": run("lscpu | sed -n 's/^Model name:[[:space:]]*//p' | head -n 1"),
+              "memory_total": run("grep MemTotal /proc/meminfo"),
+              "python": platform.python_version(),
+          }
+          if vendor == "amd":
+              env["rocm_version"] = read("/opt/rocm/.info/version")
+              env["amdgpu_driver"] = read("/sys/module/amdgpu/version")
+              env["gpus"] = run("rocm-smi --showproductname --json")
+              env["gpu_agents"] = run("rocminfo | grep -E 'Marketing Name:|Name:[[:space:]]+gfx'")
+          else:
+              env["nvidia_driver"] = run("nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -n 1")
+              env["cuda_version"] = run("nvidia-smi | sed -n 's/.*CUDA Version: \\([0-9.]*\\).*/\\1/p' | head -n 1")
+              env["nvcc"] = run("nvcc --version | tail -n 2")
+              env["gpus"] = run("nvidia-smi --query-gpu=name,memory.total,pci.bus_id --format=csv,noheader")
+          Path("results/environment.json").write_text(json.dumps(env, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(env, indent=2))
+          PY
+
+      # run_benchmark.sh calls scripts/ensure_setup.sh, which runs setup.sh
+      # only when this runner has no completed .venv for the workload yet.
+      - name: Run benchmark
+        id: bench
+        run: bash run_benchmark.sh --profile "${PROFILE}" --validate
+
+      - name: Job summary
+        if: always()
+        env:
+          BENCH_OUTCOME: ${{ steps.bench.outcome }}
+        run: |
+          python3 - <<'PY' >> "${GITHUB_STEP_SUMMARY}"
+          import json
+          import os
+          from pathlib import Path
+
+          print(f"### GPU {os.environ['PROFILE']} — {os.environ['VENDOR']} / {os.environ['OS_LABEL']}: "
+                f"{os.environ.get('BENCH_OUTCOME') or 'not run'}")
+          env_path = Path("results/environment.json")
+          if env_path.is_file():
+              env = json.loads(env_path.read_text(encoding="utf-8"))
+              stack = env.get("rocm_version") or env.get("cuda_version") or "?"
+              print(f"\nRunner `{env.get('runner_name')}` · kernel {env.get('kernel')} · stack {stack}")
+          summary = Path("results/summary.json")
+          if not summary.is_file():
+              print("\nNo results/summary.json was produced.")
+              raise SystemExit(0)
+          data = json.loads(summary.read_text(encoding="utf-8"))
+          print(f"\nStatus **{data.get('status')}** · samples {data.get('sample_count')}\n")
+          print("| Metric | Value |\n|---|---|")
+          for name, value in list((data.get("metrics") or {}).items())[:15]:
+              if isinstance(value, dict):
+                  value = value.get("mean", json.dumps(value, separators=(",", ":")))
+              print(f"| {name} | {value} |")
+          PY
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: results-${{ github.event.repository.name }}-${{ inputs.profile }}-${{ github.run_id }}
+          path: |
+            results/summary.json
+            results/environment.json
+            results/parsed/
+            results/install_status.txt
+          if-no-files-found: warn
+          retention-days: __RETENTION_DAYS__

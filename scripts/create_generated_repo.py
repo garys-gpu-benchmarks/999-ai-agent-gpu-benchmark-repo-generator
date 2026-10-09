@@ -62,6 +62,10 @@ REQUIRED_TEMPLATE_FILES = (
     "scripts/text_io.py",
     "config/framework_registry.yaml",
     "config/platform_policy.yaml",
+    "config/ci_contract.yaml",
+    "scripts/ci_contract.py",
+    "templates/workload/.github/workflows/ci.yml",
+    "templates/workload/.github/workflows/gpu-smoke.yml",
 )
 
 

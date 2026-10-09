@@ -1,0 +1,5 @@
+# Fixture config: real workloads hold their sweep parameters here.
+benchmark:
+  workload_number: "900"
+sweep:
+  sample_check_count: 1

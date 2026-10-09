@@ -84,8 +84,8 @@ Do not invent new top-level directories unless the change is required by the ben
 │   ├── SECURITY.md                 # Vulnerability reporting guidance
 │   ├── ISSUE_TEMPLATE/             # Bug/feature issue templates
 │   └── workflows/
-│       ├── ci.yml                  # Lint + structure check (no GPU required)
-│       └── nightly.yml             # Scheduled GPU sweep on self-hosted runner
+│       ├── ci.yml                  # Thin caller → shared-workflows ci.yml@v1 (hosted lint/schema/structure, no GPU)
+│       └── gpu-smoke.yml           # Thin caller → shared-workflows gpu-smoke.yml@v1 (manual, self-hosted GPU)
 │
 ├── config/
 │   ├── benchmark_config.yaml       # Sweep parameters from Parameters_SmokeBaselineExtend + optional baselines/thresholds

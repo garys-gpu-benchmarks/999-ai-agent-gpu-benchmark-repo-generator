@@ -162,7 +162,7 @@ sqlite3 results/benchmark.db "SELECT ...;"
 - `src/` — benchmark source or shared utilities
 - `tests/` — including `fixtures/.gitkeep`
 - `results/` — with `raw/` and `parsed/` subdirectories and `generation_manifest.json`
-- `.github/workflows/` — CI and nightly workflows
+- `.github/workflows/` — thin CI callers `ci.yml` and `gpu-smoke.yml` (rendered from `config/ci_contract.yaml`)
 
 **Note on `src/` for binary benchmarks:** If the workload uses a pre-compiled binary (e.g., `rocblas-bench`, `babelstream`), `src/` holds shared Python utility modules or a `.gitkeep` sentinel only. Do not generate stub HIP/C++ source if no custom kernel is needed.
 
@@ -749,37 +749,21 @@ CI workflows run `.venv/bin/python scripts/validate_results.py --seed-fixture` t
 
 ## CI Workflow Contract
 
-`.github/workflows/` must contain at minimum:
+Generated workload repositories do not carry their own CI logic. `scripts/init_generated_repo.py` renders exactly two thin caller workflows from `templates/workload/.github/workflows/` and `config/ci_contract.yaml`; the steps live once in the `shared-workflows` repository (`templates/shared-workflows/`, emitted by `scripts/emit_shared_workflows.py`, published and tagged separately).
 
-- **`ci.yml`** — runs on pull request: lint (shellcheck for `.sh`, ruff/flake8 for `.py`), validates schema files under `schemas/`, runs `scripts/validate_template_inputs.py` contract checks, seeds the fixture database, and runs `scripts/validate_results.py` against it (no GPU or live hardware required).
-- **`nightly.yml`** — runs on a self-hosted runner with the required hardware, executes `run_benchmark.sh` with the default/smoke sweep, then runs `scripts/validate_results.py` against the resulting `results/benchmark.db`, and uploads `results/parsed/` as a workflow artifact.
-- Both workflows must fail the job (non-zero exit) when `validate_results.py` exits non-zero — do not mark validation steps `continue-on-error`.
+`.github/workflows/` in a generated repository contains exactly:
 
-### CI workflow pattern
+- **`ci.yml`** — triggers on `pull_request` (to `main`, `develop`) and `push` (to `main`); `permissions: contents: read`; one job that `uses: <owner>/shared-workflows/.github/workflows/ci.yml@<ref>` with `vendor` and `os_label`. The shared job runs on a GitHub-hosted runner: shellcheck (`--severity=warning`), ruff with the rules in `config/pyproject.toml`, `bash -n`, `compileall`, `run_benchmark.sh --help`, `benchmark_specification.json` against its schema, `config/benchmark_config.yaml` parse, `scripts/validate_results.py --seed-fixture --quiet`, required files, and actionlint. Every check runs, and the job summary lists each result.
+- **`gpu-smoke.yml`** — triggers on `workflow_dispatch` only (with a `profile` choice: smoke, baseline, extended); `permissions: contents: read`; one job that `uses: <owner>/shared-workflows/.github/workflows/gpu-smoke.yml@<ref>`. The shared job runs on `[self-hosted, gpu, <vendor>, <os_label>]`, verifies the pre-provisioned GPU stack without installing it, writes `results/environment.json`, runs `run_benchmark.sh --profile <profile> --validate`, and uploads `results/summary.json`, `results/environment.json` and `results/parsed/`.
 
-```yaml
-# ci.yml — contract validation step
-- name: Validate template contracts
-  run: |
-    ".venv/bin/python" scripts/validate_template_inputs.py \
-      --benchmark-specification benchmark_specification.json \
-      --benchmark-schema schemas/benchmark_specification.schema.json \
-      --allow-missing-benchmark-definition
-    ".venv/bin/python" scripts/validate_template_inputs.py \
-      --generation-manifest results/generation_manifest.json \
-      --generation-schema schemas/generation_report.schema.json \
-      --allow-missing-generation-manifest
+Rules:
 
-# ci.yml — validation step (no GPU required)
-- name: Seed fixture and validate
-  run: |
-    ".venv/bin/python" scripts/validate_results.py --seed-fixture --quiet
-
-# nightly.yml — live hardware validation step
-- name: Validate live results
-  run: |
-    ".venv/bin/python" scripts/validate_results.py --db results/benchmark.db
-```
+- Never hand-edit or hand-write workflow files in a generated repository. Change `config/ci_contract.yaml` or the templates and regenerate. `init_generated_repo.py` fails generation when a rendered caller does not match the contract.
+- Never add `pull_request` or `pull_request_target` to the GPU workflow: a fork's code would run on the self-hosted GPU runner.
+- Never swallow lint failures (`|| true`, `continue-on-error`) in any workflow.
+- Do not generate `nightly.yml` or `.github/dependabot.yml` in a workload; Dependabot is configured in `shared-workflows` only.
+- `config/ci_contract.yaml`, `scripts/ci_contract.py` and `scripts/emit_shared_workflows.py` are generation-only and are not copied into generated repositories.
+- The contract's inputs (`vendor`, `os_label`, `profile`) and the shared workflows' versioning rule (compatible change: move `v1`; breaking change: new `v2` and regenerate) are documented in `templates/shared-workflows/README.md`.
 
 ### What the agent must NOT do
 

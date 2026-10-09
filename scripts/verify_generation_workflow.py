@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 import yaml
 
 from generate_workload_parameters import OUTPUT, build_catalog
+from host_exec import normalize_remote_root
 from prompt_workflow import available_workloads, parse_workloads, workload_token
 
 
@@ -24,6 +24,7 @@ def check_prompt_parser() -> None:
         "Generate workload 101.": ["101"],
         "Generate workloads 101 and 103.": ["101", "103"],
         "Generate workloads 104 through 108.": ["104", "105", "106", "107", "108"],
+        "Generate workloads 101 through 132, inclusive.": [str(value) for value in range(101, 133)],
         "Generate workloads ALL.": [str(value) for value in available],
     }
     for prompt, expected in cases.items():
@@ -32,6 +33,20 @@ def check_prompt_parser() -> None:
             raise AssertionError(f"Parser mismatch for {prompt!r}: {actual} != {expected}")
     if workload_token(cases["Generate workloads ALL."], available) != "ALL":
         raise AssertionError("ALL workload token was not canonicalized.")
+
+
+def check_remote_root() -> None:
+    if normalize_remote_root("/opt/benchmarks") != "/opt/benchmarks":
+        raise AssertionError("/opt/benchmarks was rewritten")
+    rewritten = normalize_remote_root(r"C:\Program Files\Git\opt\benchmarks")
+    if rewritten != "/opt/benchmarks":
+        raise AssertionError(f"Git Bash rewrite was not undone: {rewritten}")
+    for forbidden in ("/root", "/opt/workloads", "/root/benchmarks"):
+        try:
+            normalize_remote_root(forbidden)
+        except SystemExit:
+            continue
+        raise AssertionError(f"remote root {forbidden} was accepted")
 
 
 def check_catalog() -> None:
@@ -63,6 +78,7 @@ def check_markdown_links() -> None:
 
 def main() -> int:
     check_prompt_parser()
+    check_remote_root()
     check_catalog()
     check_markdown_links()
     print("[PASS] Prompt, catalog, and Markdown-link checks passed.")

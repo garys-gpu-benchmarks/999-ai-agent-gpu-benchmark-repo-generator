@@ -3,7 +3,6 @@
 # Description: Fixture tests for TEMPLATE_00_87 create contracts, metrics D1-D4, and overlays.
 from __future__ import annotations
 
-import json
 import sys
 import tempfile
 import unittest

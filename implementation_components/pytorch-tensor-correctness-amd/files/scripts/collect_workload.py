@@ -4,11 +4,6 @@ from __future__ import annotations
 import argparse
 import csv
 import io
-import os
-import shutil
-import subprocess
-import sys
-import time
 from pathlib import Path
 
 import yaml
@@ -64,7 +59,7 @@ def parse_args():
     parser.add_argument("--output-format", default="csv")
     return parser.parse_args()
 
-from run_tensor_correctness import collect
+from run_tensor_correctness import collect  # noqa: E402
 
 
 def main() -> int:

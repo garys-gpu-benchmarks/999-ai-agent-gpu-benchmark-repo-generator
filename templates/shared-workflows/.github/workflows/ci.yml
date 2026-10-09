@@ -1,0 +1,188 @@
+# Reusable hosted CI for every GPU benchmark workload repository.
+# Called from each workload's .github/workflows/ci.yml:
+#   uses: __CI_OWNER__/__CI_SHARED_REPO__/.github/workflows/ci.yml@__CI_REF__
+# Runs on a GitHub-hosted runner. It never installs a GPU stack and never
+# executes the benchmark; that is the job of gpu-smoke.yml on a self-hosted runner.
+# Every check runs even when an earlier one fails, so one run shows all problems.
+name: Standard CI
+
+on:
+  workflow_call:
+    inputs:
+      vendor:
+        description: GPU vendor of the workload (__VENDOR_CHOICES__)
+        required: true
+        type: string
+      os_label:
+        description: Target OS label (__OS_LABEL_CHOICES__)
+        required: true
+        type: string
+      python_version:
+        description: Python used for linting and validation
+        required: false
+        type: string
+        default: "__PYTHON_VERSION__"
+      working_directory:
+        description: Workload root inside the checkout (the self-test points this at a fixture)
+        required: false
+        type: string
+        default: "."
+
+permissions:
+  contents: read
+
+env:
+  RUFF_VERSION: "__RUFF_VERSION__"
+  ACTIONLINT_VERSION: "__ACTIONLINT_VERSION__"
+
+jobs:
+  validate:
+    name: validate
+    runs-on: __HOSTED_RUNNER__
+    timeout-minutes: __CI_TIMEOUT__
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check inputs
+        env:
+          VENDOR: ${{ inputs.vendor }}
+          OS_LABEL: ${{ inputs.os_label }}
+        run: |
+          case " __VENDOR_CHOICES__ " in *" ${VENDOR} "*) ;; *) echo "::error::vendor '${VENDOR}' is not one of: __VENDOR_CHOICES__"; exit 1 ;; esac
+          case " __OS_LABEL_CHOICES__ " in *" ${OS_LABEL} "*) ;; *) echo "::error::os_label '${OS_LABEL}' is not one of: __OS_LABEL_CHOICES__"; exit 1 ;; esac
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Install tools
+        id: tools
+        run: |
+          python -m pip install --disable-pip-version-check --quiet "ruff==${RUFF_VERSION}" PyYAML jsonschema
+          curl -fsSL -o "${RUNNER_TEMP}/actionlint.tgz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          tar -xzf "${RUNNER_TEMP}/actionlint.tgz" -C "${RUNNER_TEMP}" actionlint
+          shellcheck --version
+
+      - name: Lint shell scripts
+        id: lint_shell
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: |
+          # Warnings and errors fail the job; info/style notes are reported only.
+          find scripts -name '*.sh' -type f -not -path 'scripts/templates/*' -print0 \
+            | xargs -0 -r shellcheck --severity=warning
+
+      - name: Lint Python scripts
+        id: lint_python
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: |
+          if [[ -f config/pyproject.toml ]]; then
+            ruff check --config config/pyproject.toml scripts --exclude scripts/templates
+          else
+            ruff check --select E4,E7,E9,F scripts --exclude scripts/templates
+          fi
+
+      - name: Syntax checks
+        id: syntax
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: |
+          bash -n setup.sh
+          bash -n run_benchmark.sh
+          find scripts -name '*.sh' -type f -print0 | xargs -0 -r -n1 bash -n
+          python -m compileall -q scripts
+          bash run_benchmark.sh --help >/dev/null
+
+      - name: Validate specification and config
+        id: schema
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          import jsonschema
+          import yaml
+
+          spec = json.loads(Path("benchmark_specification.json").read_text(encoding="utf-8"))
+          schema = json.loads(Path("schemas/benchmark_specification.schema.json").read_text(encoding="utf-8"))
+          jsonschema.validate(spec, schema)
+          print("benchmark_specification.json matches its schema")
+          config = Path("config/benchmark_config.yaml")
+          yaml.safe_load(config.read_text(encoding="utf-8"))
+          print(f"{config} parses")
+          PY
+
+      - name: Validate results pipeline on a seeded fixture
+        id: fixture
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: |
+          # Builds tests/fixtures/benchmark.db from the hardware profile and
+          # validates it with the workload's own validator. No GPU needed.
+          if [[ -f scripts/validate_results.py ]]; then
+            python scripts/validate_results.py --seed-fixture --quiet
+          else
+            echo "No scripts/validate_results.py in this repository; skipped."
+          fi
+
+      - name: Check repository structure
+        id: structure
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: |
+          missing=0
+          for path in README.md LICENSE legal/NOTICE .gitignore .gitattributes \
+                      benchmark_specification.json schemas/benchmark_specification.schema.json \
+                      setup.sh run_benchmark.sh config/benchmark_config.yaml \
+                      .github/workflows/ci.yml .github/workflows/gpu-smoke.yml; do
+            if [[ ! -s "${path}" ]]; then
+              echo "::error file=${path}::required file is missing or empty"
+              missing=1
+            fi
+          done
+          if [[ -e .github/workflows/nightly.yml ]]; then
+            echo "::error file=.github/workflows/nightly.yml::superseded by gpu-smoke.yml; remove it"
+            missing=1
+          fi
+          exit "${missing}"
+
+      - name: Lint workflow files
+        id: actionlint
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: |
+          "${RUNNER_TEMP}/actionlint" -color .github/workflows/*.yml
+
+      - name: Job summary
+        if: always()
+        env:
+          VENDOR: ${{ inputs.vendor }}
+          OS_LABEL: ${{ inputs.os_label }}
+          R_SHELL: ${{ steps.lint_shell.outcome }}
+          R_PYTHON: ${{ steps.lint_python.outcome }}
+          R_SYNTAX: ${{ steps.syntax.outcome }}
+          R_SCHEMA: ${{ steps.schema.outcome }}
+          R_FIXTURE: ${{ steps.fixture.outcome }}
+          R_STRUCTURE: ${{ steps.structure.outcome }}
+          R_ACTIONLINT: ${{ steps.actionlint.outcome }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          icon() { case "$1" in success) echo "✅ pass" ;; failure) echo "❌ fail" ;; *) echo "⏭️ $1" ;; esac; }
+          {
+            echo "### CI — ${VENDOR} / ${OS_LABEL}: ${JOB_STATUS}"
+            echo ""
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Shell lint (shellcheck) | $(icon "${R_SHELL}") |"
+            echo "| Python lint (ruff ${RUFF_VERSION}) | $(icon "${R_PYTHON}") |"
+            echo "| Syntax (bash -n, compileall, --help) | $(icon "${R_SYNTAX}") |"
+            echo "| Specification schema + config | $(icon "${R_SCHEMA}") |"
+            echo "| Results validator on seeded fixture | $(icon "${R_FIXTURE}") |"
+            echo "| Repository structure | $(icon "${R_STRUCTURE}") |"
+            echo "| Workflow lint (actionlint ${ACTIONLINT_VERSION}) | $(icon "${R_ACTIONLINT}") |"
+            echo ""
+            echo "GPU benchmarks run separately in **gpu-smoke.yml** on a self-hosted runner."
+          } >> "${GITHUB_STEP_SUMMARY}"

@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-10-08 — TEMPLATE_00_103: one shared, versioned CI for every workload
+
+Workloads no longer carry their own CI logic. Already generated repositories are unchanged until they are regenerated.
+
+- **Contract.** New `config/ci_contract.yaml` (generation-only) holds the GitHub owner (`garys-gpu-benchmarks`), the `shared-workflows` repo and tag (`v1`), the caller inputs (`vendor`, `os_label`, `profile`), runner labels, timeouts, and pinned tool versions (ruff 0.16.8, actionlint 1.7.12). `scripts/ci_contract.py` derives each workload's vendor/OS/bundle and renders templates.
+- **Callers.** `init_generated_repo.py` renders `.github/workflows/ci.yml` and `gpu-smoke.yml` from `templates/workload/.github/workflows/` instead of copying `docs/examples/generated-repo-workflows/*.example`, and fails generation when a caller does not match the contract. `nightly.yml` and the workload `.github/dependabot.yml` are no longer emitted; `prepare_github_publish.sh` removes them from older trees and no longer patches workflow files.
+- **Shared workflows.** `templates/shared-workflows/` (emitted once by `scripts/emit_shared_workflows.py --output-root <Repos_To_Github>`): hosted `ci.yml` (shellcheck `--severity=warning`, strict ruff, syntax, spec schema, seeded-fixture validation, required files, actionlint, per-check job summary; every check runs), self-hosted `gpu-smoke.yml` (runner `[self-hosted, gpu, <vendor>, <os_label>]`, OS check, stack verification without installs, `results/environment.json`, `run_benchmark.sh --profile <p> --validate`, headline metrics, artifact upload), `self-test.yml` against a sample workload, Dependabot, README with the versioning and fork-safety policy. Least-privilege `permissions` and `actions/checkout@v7`, `setup-python@v7`, `upload-artifact@v7` throughout.
+- **Fixed in the old CI.** The published `ci.yml` called `scripts/validate_template_inputs.py`, which `prepare_github_publish.sh` deletes, and swallowed ruff with `|| true`. The GPU job reinstalled the stack with `setup.sh --assume-yes` every run and could land on any vendor's runner.
+- **Lint backlog.** Explicit ruff rules (`E4,E7,E9,F`) in `config/pyproject.toml`; 63 findings fixed across `scripts/` and `implementation_components/` (unused imports and variables, intentional late imports marked). Shellcheck warnings fixed in `collect_hw_sw_info.sh` (and its generator), `lib/nvcc_glibc_throw.sh`, `lib/hipcc_host_gcc.sh`, `smoke_check_generated_repo.sh`. `validate_results.py` (from `materialize_generated_harness.py`) drops an unused variable; workloads without a compile step get a real no-op `scripts/build.sh` instead of an empty file.
+- **Suite tools.** `templates/suite-tools/` holds `run_benchmark_suite.sh` and `get_remote_info.sh` (example hosts replaced with documentation addresses), emitted to `gpu-bench-suite/`.
+- **README and checks.** `README_TEMPLATE.md` gets a live CI badge, a "Continuous Integration" section, and the `git clone --recurse-submodules` bundle command. `self_check_generated_repo.sh`, `check_github_publish_ready.sh`, the submission checklist, `AGENTS.md` (CI Workflow Contract) and the generator README ("Continuous Integration") describe and enforce the new contract. Template CI pins permissions, runs the unit tests, and renders and actionlints the shared templates. New `tests/test_ci_contract.py`.
+
+## 2026-10-06 — Three-line generation prompt
+
+The chatbox entry point is `scripts/run_from_prompt.py`. It reads a `Generate workloads ...` line and an optional `ssh` line, writes repositories in the parent of this generator, and calls `create_one_workload.py` without a `--remote-root` argument. `docs/AI_AGENT_INSTRUCTIONS.md` states the minimal prompt and the defaults that no longer need to be pasted. An always-on `.cursor/rules/generate-workloads.mdc` rule keeps that contract in force. A trailing `inclusive` on a range is ignored. Git Bash rewriting `/opt/benchmarks` to `C:/Program Files/Git/opt/benchmarks` is undone, and `/root` or `/opt/workloads` is rejected.
+
+## 2026-10-06 — NCCL baseline fits under 5 minutes
+
+`Parameters_SmokeBaselineExtend` baseline `num_iterations` for 216 and 416 were scaled from the slower overnight run so baseline lands near 4:00 (under 5 min). Overlay rounds stay 10. Smoke stays 2 and extended stays 620000. Command columns were regenerated.
+
+- **216:** 480000 → 295000 (measured 6:12 and 6:30).
+- **416:** 480000 → 244000 (measured 6:13 and 7:53). The 2026-09-28 note named 330000, but the cell that ran was 480000.
+
 ## 2026-10-05 — NUMA pointer hops fit 4 and 12 minutes
 
 `Parameters_SmokeBaselineExtend` `num_iterations` for 110, 210, 310, and 410 were scaled from the slower run in `Aggregate_Project322_100_200_300_400_20261005a` so baseline lands near 4:00 (3–5 min) and extended near 12:00 (8–15 min). Smoke stays 20000. Command columns were regenerated.

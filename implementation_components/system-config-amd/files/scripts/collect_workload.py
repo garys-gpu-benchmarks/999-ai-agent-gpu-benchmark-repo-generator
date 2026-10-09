@@ -6,10 +6,7 @@ import csv
 import io
 import os
 import re
-import shutil
 import subprocess
-import sys
-import time
 from pathlib import Path
 
 import yaml
@@ -154,7 +151,8 @@ def main() -> int:
     sweep = load_params(args.config)
     expected_kernel = str(sweep.get("kernel_version", "6.8.0"))
     expected_driver = str(sweep.get("driver_version", "6"))
-    expected_rocm = str(sweep.get("rocm_version", "7.2.1"))
+    # Read for the record; not compared yet (kernel/runtime checks live elsewhere).
+    _expected_rocm = str(sweep.get("rocm_version", "7.2.1"))
     packages = [item.strip() for item in str(sweep.get("required_packages", "rocm-core,rocm-smi")).split(",") if item.strip()]
     permissions_check = str(sweep.get("permissions_check", "true")).lower() in {"1", "true", "yes"}
     uname = os.uname().release

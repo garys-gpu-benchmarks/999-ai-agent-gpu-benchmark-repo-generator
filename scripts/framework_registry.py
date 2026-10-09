@@ -110,7 +110,6 @@ def resolve_flags(
         vendor_key = "nvidia"
     vendor_block = ((data.get("vendors") or {}).get(vendor_key) or {})
     flags_spec = vendor_block.get("flags") or {}
-    haystack = f"{framework} {workload_name}"
     flags: dict[str, int] = {name: 0 for name in flags_spec}
     for name, rule in flags_spec.items():
         include = rule.get("include") or []

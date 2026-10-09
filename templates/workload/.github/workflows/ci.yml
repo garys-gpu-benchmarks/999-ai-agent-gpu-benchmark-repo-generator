@@ -1,0 +1,26 @@
+# Thin caller generated from the CI contract (config/ci_contract.yaml in the
+# generator). The checks themselves live in the shared reusable workflow:
+# https://github.com/__CI_OWNER__/__CI_SHARED_REPO__
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+
+# Ceiling for the token the shared workflow receives.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the run it replaces.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: __CI_OWNER__/__CI_SHARED_REPO__/.github/workflows/__CI_WORKFLOW__@__CI_REF__
+    with:
+      vendor: __VENDOR__
+      os_label: __OS_LABEL__

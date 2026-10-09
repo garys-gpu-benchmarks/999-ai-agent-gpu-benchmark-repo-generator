@@ -40,7 +40,7 @@ RULES:
 # {{Workload Name}} Benchmark
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://img.shields.io/badge/CI-host--safe-green.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/{{CI Owner}}/{{CI GitHub Slug}}/actions/workflows/ci.yml/badge.svg)](https://github.com/{{CI Owner}}/{{CI GitHub Slug}}/actions/workflows/ci.yml)
 
 Target: {{OS Version}} · {{GPU Vendor}} · see Hardware Requirements. This is a host benchmark, not a laptop `pip install` project.
 
@@ -174,6 +174,7 @@ Derive failure modes from: the build/install step (Section 6), a hardware/resour
 ├── setup.sh
 ├── run_benchmark.sh
 ├── benchmark_specification.json
+├── .github/workflows/      # thin CI callers (see Continuous Integration)
 ├── config/
 ├── scripts/
 ├── src/
@@ -181,4 +182,23 @@ Derive failure modes from: the build/install step (Section 6), a hardware/resour
 ├── docs/
 ├── results/
 └── LICENSE
+```
+
+## Continuous Integration
+
+| Workflow | Runs on | When | What it does |
+|---|---|---|---|
+| [CI](.github/workflows/ci.yml) | GitHub-hosted runner | every pull request, and every push to `main` | shellcheck, ruff, `bash -n`, `compileall`, `run_benchmark.sh --help`, specification schema, the results validator on a seeded fixture, required files, and actionlint. No GPU and no benchmark run. |
+| [GPU Smoke Benchmark](.github/workflows/gpu-smoke.yml) | self-hosted runner labeled `gpu`, `{{CI Vendor}}`, `{{CI OS Label}}` | only when started by hand: **Actions → GPU Smoke Benchmark → Run workflow** (choose `smoke`, `baseline` or `extended`) | Verifies the pre-provisioned GPU stack, records `results/environment.json` (driver, runtime, kernel, GPU), runs the profile with `--validate`, shows headline metrics on the run page, and uploads the results. |
+
+Both files are short callers. The steps themselves live once, for every workload in the suite, in [`{{CI Owner}}/{{CI Shared Workflows Repo}}`](https://github.com/{{CI Owner}}/{{CI Shared Workflows Repo}}), pinned at `@{{CI Shared Workflows Ref}}`. The GPU workflow is never triggered by pull requests, so code from a fork cannot run on the GPU host.
+
+### Running it as part of the {{GPU Vendor}} {{CI OS Display}} bundle
+
+This repository is one of the 32 workloads in [`{{CI Bundle Repo}}`](https://github.com/{{CI Owner}}/{{CI Bundle Repo}}), which holds them as git submodules. To put the whole bundle on a GPU host and run this workload from it:
+
+```bash
+git clone --recurse-submodules https://github.com/{{CI Owner}}/{{CI Bundle Repo}} {{CI Install Root}}
+cd {{CI Install Root}}/{{CI GitHub Slug}}
+bash run_benchmark.sh --profile smoke --validate
 ```

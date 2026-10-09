@@ -41,6 +41,7 @@ identity="$(extract_identity)"
 WORKLOAD_NUMBER="${identity%%|*}"
 REPO_NAME="${identity#*|}"
 TARGET_REPO="${1:-${WORKLOAD_NUMBER}-${REPO_NAME}}"
+# shellcheck disable=SC2034  # kept for log lines and future use
 TARGET_REPO_NAME="$(basename "${TARGET_REPO}")"
 
 if [[ ! -d "${TARGET_REPO}" ]]; then

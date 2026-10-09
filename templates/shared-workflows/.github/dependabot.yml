@@ -1,0 +1,13 @@
+# Opens a pull request when an action used by these workflows releases a new
+# version (actions/checkout, actions/setup-python, actions/upload-artifact).
+# Merge only after the Self-test workflow passes on that pull request, then
+# release a new tag (see README.md, "Releasing a change").
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]

@@ -209,14 +209,15 @@ nvcc_arch_flags() {
     # nvidia-smi can fail on host-injected drivers; infer arch from the proc model.
     gpu_info="$(cat /proc/driver/nvidia/gpus/*/information 2>/dev/null || true)"
     case "${gpu_info}" in
-      *B200*|*GB200*) cap=100 ;;
-      *H100*|*H200*|*GH200*) cap=90 ;;
+      *B200*) cap=100 ;;   # also matches GB200
+      *H100*|*H200*) cap=90 ;;   # *H200* also matches GH200
       *L40*|*Ada*) cap=89 ;;
       *A100*|*A800*) cap=80 ;;
       *) cap="" ;;
     esac
   fi
   if [[ "${cap}" =~ ^[0-9]+$ ]]; then
+    # shellcheck disable=SC2034  # read by build.sh scripts that source this helper
     NVCC_ARCH_FLAGS=(-gencode "arch=compute_${cap},code=[sm_${cap},compute_${cap}]")
   else
     echo "[WARN] GPU compute capability not detected; nvcc uses its default arch and the driver must JIT PTX. Set BENCHMARK_CUDA_ARCH to override." >&2

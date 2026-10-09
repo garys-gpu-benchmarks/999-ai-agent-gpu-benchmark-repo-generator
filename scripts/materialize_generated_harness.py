@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 
@@ -736,8 +735,6 @@ def main() -> int:
         if isinstance(value, (int, float)) and float(value) <= 0 and not zero_ok(column):
             failures.append(f"run.{column} is not positive")
     for sample in samples:
-        sample_keys = set(sample.keys())
-        sample_error = sample["error_message"] if "error_message" in sample_keys else None
         if sample["status"] != "ok":
             failures.append(f"sample {sample['sample_index']} is not ok")
         # A sample with status == "ok" and a non-empty error_message is a

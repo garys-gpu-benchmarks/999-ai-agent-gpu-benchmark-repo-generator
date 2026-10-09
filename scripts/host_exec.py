@@ -47,6 +47,28 @@ def to_git_bash_path(path: str) -> str:
     return text.replace("\\", "/")
 
 
+def normalize_remote_root(value: str) -> str:
+    """Return the VM install directory, undoing Git Bash's /opt rewrite.
+
+    MSYS converts a ``/opt/benchmarks`` argument into
+    ``C:/Program Files/Git/opt/benchmarks`` before Python sees it. Installs
+    belong at ``/opt/benchmarks`` on the Ubuntu VM, never under ``/root`` or
+    ``/opt/workloads``.
+    """
+    text = str(value or "").strip().strip('"').strip("'").replace("\\", "/")
+    rewritten = re.search(r"/Program Files/Git(?P<opt>/opt(?:/.*)?)$", text, flags=re.IGNORECASE)
+    if rewritten:
+        text = rewritten.group("opt")
+    text = text.rstrip("/") or "/opt/benchmarks"
+    forbidden = ("/root", "/opt/workloads")
+    if text in forbidden or any(text.startswith(prefix + "/") for prefix in forbidden):
+        raise SystemExit(
+            "[FAIL] Remote install path must stay /opt/benchmarks. "
+            f"Refusing {text}."
+        )
+    return text
+
+
 def normalize_ssh_command(ssh: str) -> str:
     """Rewrite Windows drive-letter key paths so Git Bash OpenSSH can read -i."""
     parts = re.split(r"(\s+)", ssh.strip())

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # File: scripts/self_check_generated_repo.sh
-# Version: 1.6.0
+# Version: 1.7.0
 # Maintainer: AI Agent GPU Benchmark Repo Generator
-# Date: 2026-08-17
+# Date: 2026-10-08
 # Description: Standalone generated-repo validation checks run from generated repo root.
 # Execution: bash scripts/self_check_generated_repo.sh
 # Options: None
@@ -63,7 +63,7 @@ required_paths=(
   ".github/ISSUE_TEMPLATE/bug_report.md"
   ".github/ISSUE_TEMPLATE/feature_request.md"
   ".github/workflows/ci.yml"
-  ".github/workflows/nightly.yml"
+  ".github/workflows/gpu-smoke.yml"
   "docs/GITHUB_PUBLISH_WORKLOAD_REPO.md"
   "scripts/check_github_publish_ready.sh"
   "scripts/prepare_github_publish.sh"
@@ -76,6 +76,32 @@ for rel in "${required_paths[@]}"; do
         exit 1
     fi
 done
+
+for stale in ".github/workflows/nightly.yml" ".github/dependabot.yml"; do
+    if [[ -e "${stale}" ]]; then
+        echo "[FAIL] ${stale} is superseded (GPU runs: gpu-smoke.yml; Dependabot lives in shared-workflows)." >&2
+        exit 1
+    fi
+done
+for wf in ci gpu-smoke; do
+    if ! grep -Eq "^[[:space:]]+uses:[[:space:]]+[A-Za-z0-9_.-]+/shared-workflows/\.github/workflows/${wf}\.yml@v[0-9]+[[:space:]]*$" ".github/workflows/${wf}.yml"; then
+        echo "[FAIL] .github/workflows/${wf}.yml must be the thin caller of shared-workflows ${wf}.yml@v<N>." >&2
+        exit 1
+    fi
+    if ! grep -Eq '^permissions:' ".github/workflows/${wf}.yml"; then
+        echo "[FAIL] .github/workflows/${wf}.yml has no top-level permissions block." >&2
+        exit 1
+    fi
+done
+if grep -Eq '^[[:space:]]+pull_request(_target)?:' .github/workflows/gpu-smoke.yml; then
+    echo "[FAIL] .github/workflows/gpu-smoke.yml must never trigger on pull requests." >&2
+    exit 1
+fi
+if grep -REq 'ruff[^|]*\|\|[[:space:]]*true' .github/workflows; then
+    echo "[FAIL] a workflow swallows ruff failures with '|| true'." >&2
+    exit 1
+fi
+echo "[PASS] CI callers match the shared-workflows contract"
 
 readme_lines="$(wc -l < README.md | tr -d ' ')"
 if [[ "${readme_lines}" -lt 80 ]]; then
@@ -680,14 +706,14 @@ if workload in {"131", "231", "331"} or "sglang-serving-latency" in repo:
     print("[PASS] 131/231/331 SGLang smoke-vs-real launch contract")
 if workload in {"127", "128", "129", "227", "228", "229", "327", "328", "329"}:
     runner = Path("run_benchmark.sh").read_text(encoding="utf-8", errors="replace")
-    tiny_kv = Path("scripts/tiny_kv_server.py")
-    if "tiny_kv_server.py" not in runner and not tiny_kv.is_file():
+    has_tiny = "tiny_kv_server.py" in runner
+    has_real = "vllm.entrypoints.openai.api_server" in runner
+    if not has_tiny and not has_real:
         raise SystemExit(
-            "[FAIL] 127-129/227-229/327-329 must ship scripts/tiny_kv_server.py "
-            "so smoke can start it. Real vLLM profiles may launch "
-            "vllm.entrypoints.openai.api_server for every profile."
+            "[FAIL] 127-129/227-229/327-329 smoke must be able to start "
+            "scripts/tiny_kv_server.py or python -m vllm.entrypoints.openai.api_server."
         )
-    if "vllm.entrypoints.openai.api_server" not in runner:
+    if not has_real:
         raise SystemExit(
             "[FAIL] 127-129/227-229/327-329 baseline/extended must start "
             "python -m vllm.entrypoints.openai.api_server."

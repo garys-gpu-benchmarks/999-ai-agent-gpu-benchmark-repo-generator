@@ -33,7 +33,7 @@ Each task exists as AMD/NVIDIA × Ubuntu 24.04/26.04. One generator (`init_gener
 | 3. Clone-safe GitHub Actions (no generation-time `self_check`) | yes | yes | yes | yes |
 | 4a. `scripts/lib/hipcc_host_gcc.sh` sourced from `common.sh` | yes (no-op or GCC 13/14 pin if `hipcc` is used) | harmless (no `hipcc`; flags unused) | **required** for HIP `build.sh` (Clang 23 / GCC 16 misses `<cstdlib>`) | harmless |
 | 4b. rocHPL `linpack-rochpl-amd` overlay (`size_t nn` + clamp N>=65536 to 32768, 16 repeats) | yes (120) | no (NVIDIA Linpack is a different tree) | yes (320) | no |
-| 5. Dependabot (Actions weekly, pip monthly) | yes | yes | yes | yes |
+| 5. CI callers → `shared-workflows@v1` (Dependabot lives in `shared-workflows`) | yes | yes | yes | yes |
 | `prepare_github_publish.sh --dry-run` / `--apply` | yes | yes | yes | yes |
 
 NVIDIA compile uses `nvcc` / CUDA, not `hipcc`. The hipcc helper is still copied into NVIDIA repos because `scripts/lib/` is shared; it does not change CUDA setup.
@@ -52,7 +52,7 @@ Do not publish `AGENTS.md`, `README_TEMPLATE.md`, `PRD_TEMPLATE.md`, `SPEC_TEMPL
 
 ### 3. Clone-safe CI
 
-Public `.github/workflows/ci.yml` must not run generation-time `scripts/self_check_generated_repo.sh` (that needs `*_copy`, `.venv`, and a prior smoke run). Host-safe lint, schema validate, and `check_github_publish_ready.sh` stay.
+Workloads carry two thin callers, `.github/workflows/ci.yml` and `gpu-smoke.yml`, rendered from `config/ci_contract.yaml`. The checks live in the `shared-workflows` repository and never run generation-time scripts (`self_check_generated_repo.sh`, `validate_template_inputs.py`). `prepare_github_publish.sh` no longer rewrites workflow files; it removes a superseded `nightly.yml` / `.github/dependabot.yml` and fails if a caller does not point at `shared-workflows`. Publish and tag `shared-workflows` (`scripts/emit_shared_workflows.py`, then `v1.0.0` and `v1`) before the first workload push, because that push runs CI through `@v1`.
 
 ### 4. Vendor compile correctness
 
@@ -62,7 +62,7 @@ Public `.github/workflows/ci.yml` must not run generation-time `scripts/self_che
 
 ### 5. Dependabot
 
-`.github/dependabot.yml` is installed with the other generated GitHub files.
+Dependabot is configured once, in `shared-workflows/.github/dependabot.yml`, where every `actions/*` reference now lives. Workloads no longer get `.github/dependabot.yml`: their callers reference only `shared-workflows`, and automatic pip upgrades would change what a benchmark measures.
 
 ### Dry-run, then apply, on a **copy**
 

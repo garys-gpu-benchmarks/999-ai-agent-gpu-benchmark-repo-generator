@@ -1,0 +1,65 @@
+# File: config/ci_contract.yaml
+# Description: Single source of truth for the CI contract between the
+#   shared-workflows repository (reusable workflows, published once and
+#   tagged) and the thin caller workflows stamped into every generated
+#   workload repository.
+# Used by: scripts/ci_contract.py (rendering), scripts/init_generated_repo.py
+#   (callers), scripts/emit_shared_workflows.py (shared-workflows and suite
+#   tools), scripts/fill_generated_docs.py (README badges and commands).
+# Generation-only: this file is not copied into generated workload repos.
+#
+# Versioning rule (see templates/shared-workflows/README.md):
+#   - A compatible change in shared-workflows (new check, bug fix, action
+#     bump) is released as an exact tag (v1.1.0) and the floating major tag
+#     (v1) is moved to it. Callers keep "@v1" and pick it up on their next run.
+#   - A breaking change (renaming/removing an input, adding a required input)
+#     creates a new major tag (v2). Change "ref" below to v2 and regenerate
+#     the workloads; already-published repos keep working on v1.
+
+schema_version: 1
+
+github:
+  # GitHub user or organization that owns all published repositories.
+  owner: garys-gpu-benchmarks
+
+shared_workflows:
+  repo: shared-workflows
+  # Floating major tag every caller pins to.
+  ref: v1
+  workflows:
+    ci: ci.yml               # hosted: lint, syntax, schema, structure, actionlint
+    gpu: gpu-smoke.yml       # self-hosted GPU: verify stack, capture env, run, upload
+
+# Inputs every caller passes. The shared workflows reject any other value.
+inputs:
+  vendor: [amd, nvidia]
+  os_label: [ubu2404, ubu2604]
+  gpu_profile: [smoke, baseline, extended]
+
+runners:
+  hosted: ubuntu-latest
+  # Self-hosted GPU runners are registered at the organization level with
+  # these labels. The job needs a runner that carries every label.
+  gpu_labels: [self-hosted, gpu, "{vendor}", "{os_label}"]
+
+defaults:
+  python_version: "3.12"
+  ci_timeout_minutes: 20
+  gpu_timeout_minutes: 120
+  artifact_retention_days: 90
+
+# Exact tool versions used by the hosted checks. Bumped deliberately.
+tools:
+  ruff: "0.16.8"
+  actionlint: "1.7.12"
+
+# Suite bundles: one GitHub repository per vendor x OS, holding the 32
+# workload repositories as git submodules (built by publish_benchmarks_to_github.sh).
+suite:
+  install_root: /opt/benchmarks
+  bundles:
+    amd-ubu2404: bundle-amd-ubuntu-2404
+    nvidia-ubu2404: bundle-nvidia-ubuntu-2404
+    amd-ubu2604: bundle-amd-ubuntu-2604
+    nvidia-ubu2604: bundle-nvidia-ubuntu-2604
+  tools_repo: gpu-bench-suite

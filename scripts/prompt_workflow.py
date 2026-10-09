@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import re
-import sys
 from pathlib import Path
 
 from extract_benchmark_definition import _load_workbook
@@ -79,6 +78,7 @@ def parse_workloads(text: str, available: list[int]) -> list[str]:
             "'Generate workload(s) <number/list/range>.' directive."
         )
     expression = (matches[0].group("expression") or "ALL").strip()
+    expression = re.sub(r"[,\s]+inclusive\s*$", "", expression, flags=re.IGNORECASE).strip(" ,")
     if expression.lower() in {"all", "all workloads"}:
         values = list(available)
     else:

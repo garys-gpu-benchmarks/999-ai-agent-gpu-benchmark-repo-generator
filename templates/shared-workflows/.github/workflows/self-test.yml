@@ -1,0 +1,48 @@
+# Tests this repository's reusable workflows before a release tag moves.
+# Every one of the workload repositories calls ci.yml through @__CI_REF__, so a broken
+# change must fail here first, not in all of them at once.
+name: Self-test
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACTIONLINT_VERSION: "__ACTIONLINT_VERSION__"
+
+jobs:
+  actionlint:
+    name: lint reusable workflows
+    runs-on: __HOSTED_RUNNER__
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: |
+          curl -fsSL -o "${RUNNER_TEMP}/actionlint.tgz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          tar -xzf "${RUNNER_TEMP}/actionlint.tgz" -C "${RUNNER_TEMP}" actionlint
+          "${RUNNER_TEMP}/actionlint" -color
+
+  # Runs the real reusable ci.yml against a small sample workload kept in
+  # tests/fixtures/sample-workload. The GPU workflow cannot run on a hosted
+  # runner; actionlint above is its test.
+  sample-workload-ci:
+    name: ci.yml on sample workload
+    uses: ./.github/workflows/ci.yml
+    with:
+      vendor: amd
+      os_label: ubu2404
+      working_directory: tests/fixtures/sample-workload

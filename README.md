@@ -1,4 +1,4 @@
-[![Template CI](https://github.com/garymichaelbass/ai-agent-gpu-benchmark-repo-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/garymichaelbass/ai-agent-gpu-benchmark-repo-generator/actions/workflows/ci.yml)
+[![Template CI](https://github.com/garys-gpu-benchmarks/999-ai-agent-gpu-benchmark-repo-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/garys-gpu-benchmarks/999-ai-agent-gpu-benchmark-repo-generator/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 # AI Coding Agent Spec-Driven GPU Benchmark Repo Generator
@@ -48,8 +48,8 @@ Instead of manually assembling setup scripts, SPEC files, PRDs, CI workflows, an
 
 #### Validation & Quality Gates
 
-- **Self-Validation via GitHub Actions** — Lints scripts, validates schemas, and verifies generator structure on every change.
-- **Generated Repos Include CI Workflows** — Each repo includes `ci.yml.example` and `nightly.yml.example`.
+- **Self-Validation via GitHub Actions** — Lints scripts, runs the test suite, validates schemas, renders and lints the CI templates, and verifies generator structure on every change.
+- **One Shared, Versioned CI for Every Generated Repo** — Each workload gets two thin caller workflows (`ci.yml`, `gpu-smoke.yml`) that call one tagged `shared-workflows` repository; both sides are rendered from `config/ci_contract.yaml`. See [Continuous Integration](#continuous-integration).
 - **Meets GitHub Community Standards** — LICENSE, CODE_OF_CONDUCT.md, CONTRIBUTING.md, SECURITY.md, issue templates, PR template.
 - **Strict Submission Checklist** — Implements `SUBMISSION_CHECKLIST.md` as a completion gate.
 - **Agent-Executed Completion Verification** — Requires passing every checklist item before declaring a repo complete.
@@ -82,7 +82,7 @@ Steps to generate your first benchmark repository:
 3. **Clone the repository generator into project root directory**:
 
    ```text
-   git clone https://github.com/garymichaelbass/ai-agent-gpu-benchmark-repo-generator.git
+   git clone https://github.com/garys-gpu-benchmarks/999-ai-agent-gpu-benchmark-repo-generator.git ai-agent-gpu-benchmark-repo-generator
    cd ai-agent-gpu-benchmark-repo-generator
    ```
 
@@ -129,7 +129,7 @@ Steps to generate your first benchmark repository:
 
 6. **Agent records the submitted prompt and generates repositories sequentially**: The agent validates the selected workloads, creates one `AI_AGENT_PROMPT_SUBMITTED_<WORKLOADS>_<UTC_TIMESTAMP>.md` in `my_project_root/`, then creates and fully finishes each sibling repository one at a time with `create_generated_repo.py --workload <N>` before creating the next directory. If the supplied SSH command contains an IPv4 address, "fully finishes" includes loading the repository onto that VM, installing it there, and running its self-check and smoke benchmark there. 
 
-7. **Execute the output**: Once completed, copy the repository (ie, `101_sys-bench-rocm-stack-validation/`) to the Ubuntu target for benchmark execution. Enter the generated repository and run:
+7. **Execute the output**: Once completed, copy the repository (ie, `101-sys-bench-amd-rocm-stack-validation-ubu2404/`) to the Ubuntu target for benchmark execution, or, once published, clone its whole platform bundle there (see [On a GPU host](#on-a-gpu-host)). Enter the generated repository and run:
 
     ```bash
     bash setup.sh
@@ -172,6 +172,111 @@ my_project_root/
     └── ai-agent-gpu-benchmark-repo-generator_copy/   # during generation only; removed once the workload passes
 ```
 
+## Continuous Integration
+
+### How it fits together
+
+```text
+config/ci_contract.yaml ──► templates/workload/.github/workflows/   ──► 2 thin callers in each of the 128 workload repos
+   (owner, tag, inputs,     templates/shared-workflows/            ──► shared-workflows repo  (published once, tagged v1)
+    runner labels, tools)   templates/suite-tools/                 ──► gpu-bench-suite repo   (run_benchmark_suite.sh, get_remote_info.sh)
+```
+
+| Where | File | Runs on | When |
+|---|---|---|---|
+| each workload | `.github/workflows/ci.yml` → `shared-workflows/.github/workflows/ci.yml@v1` | GitHub-hosted | every pull request and push to `main`: shellcheck, ruff, `bash -n`, `compileall`, `--help`, spec schema, seeded-fixture validation, required files, actionlint |
+| each workload | `.github/workflows/gpu-smoke.yml` → `shared-workflows/.github/workflows/gpu-smoke.yml@v1` | self-hosted `[self-hosted, gpu, <vendor>, <os_label>]` | only by hand (**Run workflow**): verify the pre-provisioned stack, record `results/environment.json`, run the chosen profile, upload results. Never on pull requests. |
+| `shared-workflows` | `self-test.yml` | GitHub-hosted | every change to `shared-workflows`: actionlint plus `ci.yml` against a sample workload |
+
+`init_generated_repo.py` renders the callers from the contract and refuses to finish if they do not match it. `self_check_generated_repo.sh`, `prepare_github_publish.sh` and `check_github_publish_ready.sh` fail a workload whose callers do not point at `shared-workflows`, lack `permissions`, carry their own `run:` steps, or let the GPU workflow start from a pull request. The full policy, including the `v1`/`v2` versioning rule, is in [`templates/shared-workflows/README.md`](templates/shared-workflows/README.md).
+
+### Commands
+
+All paths below assume this layout (the persistent repositories sit next to the publish script, never inside a dated take folder):
+
+```text
+Github_Garys_GPU_Repos/Repos_To_Github/
+├── publish_benchmarks_to_github.sh
+├── shared-workflows/            # emitted once by scripts/emit_shared_workflows.py, then tagged
+├── gpu-bench-suite/             # emitted by scripts/emit_shared_workflows.py
+└── 20261006a_Project332etc_take5/   # one take: the 128 workloads + 999-ai-agent-gpu-benchmark-repo-generator
+```
+
+**1. Emit the shared repositories** (from this generator folder):
+
+```bash
+python3 scripts/ci_contract.py --show                                  # resolved owner, tag, tool versions
+python3 scripts/emit_shared_workflows.py --output-root <Repos_To_Github>            # first time
+python3 scripts/emit_shared_workflows.py --output-root <Repos_To_Github> --check    # what would change
+python3 scripts/emit_shared_workflows.py --output-root <Repos_To_Github> --update   # refresh; keeps .git and tags
+```
+
+(`<Repos_To_Github>` is the folder that holds `publish_benchmarks_to_github.sh`.)
+
+**2. Publish `shared-workflows` and tag it — before any workload is pushed**, because each workload's first push runs CI through `@v1`:
+
+```bash
+cd Repos_To_Github/shared-workflows
+gh repo create garys-gpu-benchmarks/shared-workflows --public --description "Reusable CI for the GPU benchmark suite"
+git init -b main && git add -A && git commit -m "shared-workflows v1.0.0"
+git remote add origin https://github.com/garys-gpu-benchmarks/shared-workflows.git
+git push -u origin main                      # wait for the Self-test workflow to pass
+git tag v1.0.0 && git tag v1 v1.0.0 && git push origin v1.0.0 v1
+```
+
+Publish `gpu-bench-suite` the same way (no tag needed).
+
+**3. Generate and publish the workloads** as before:
+
+```bash
+cd Repos_To_Github
+bash publish_benchmarks_to_github.sh 20261006a_Project332etc_take5
+```
+
+**4. Change CI later**: edit `templates/shared-workflows/` (or `config/ci_contract.yaml`), run step 1 with `--update`, commit and push `shared-workflows`, wait for its Self-test, then move the tag. A compatible change needs no workload changes:
+
+```bash
+git tag v1.1.0 && git push origin v1.1.0
+git tag -f v1 v1.1.0 && git push -f origin v1
+```
+
+A breaking change (renamed or removed input) is tagged `v2.0.0` / `v2`; set `shared_workflows.ref: v2` in `config/ci_contract.yaml` and regenerate the workloads.
+
+### Self-hosted GPU runners
+
+Register each GPU host once, at the organization level, with labels that match its vendor and OS (from **garys-gpu-benchmarks → Settings → Actions → Runners → New self-hosted runner**, which also shows the download commands and a registration token):
+
+```bash
+./config.sh --url https://github.com/garys-gpu-benchmarks --token <REGISTRATION_TOKEN> \
+            --name gpu-amd-2404-01 --labels gpu,amd,ubu2404 --unattended
+sudo ./svc.sh install && sudo ./svc.sh start
+```
+
+Use `nvidia` instead of `amd` and `ubu2604` instead of `ubu2404` as appropriate. Install the GPU driver and ROCm/CUDA first; the workflow checks them and never installs them. Give the runner user passwordless `sudo` (each workload's first run builds its `.venv` through `setup.sh`), and run one runner agent per GPU host so two benchmarks never share a GPU.
+
+### On a GPU host
+
+Each bundle repository holds one platform's 32 workloads as git submodules, with `run.sh` and `run_benchmark_suite.sh` at the top:
+
+```bash
+git clone --recurse-submodules https://github.com/garys-gpu-benchmarks/bundle-amd-ubuntu-2404 /opt/benchmarks
+cd /opt/benchmarks
+./run.sh list                                     # all 32 should show "ready"
+./run_benchmark_suite.sh -p smoke                 # every workload, smoke profile
+./run_benchmark_suite.sh -w 101,107,121 -p baseline
+```
+
+The other bundles are `bundle-nvidia-ubuntu-2404`, `bundle-amd-ubuntu-2604` and `bundle-nvidia-ubuntu-2604`. To update a host later: `git -C /opt/benchmarks pull && git -C /opt/benchmarks submodule update --init --recursive`.
+
+### From your laptop
+
+```bash
+./get_remote_info.sh 203.0.113.10                 # ledger + results/raw + results/parsed + suite logs
+./get_remote_info.sh -i ~/.ssh/id_ed25519 -o ~/results ubuntu@203.0.113.10 2222
+```
+
+Both suite scripts are kept in [`templates/suite-tools/scripts/`](templates/suite-tools/scripts) and emitted to `gpu-bench-suite/`.
+
 ## Limitations and prerequisites
 
 - An AI Coding Agent capable of following multi-file, multi-phase instructions.
@@ -194,6 +299,10 @@ Keep private keys, passwords, API tokens, SSH commands containing secrets, and o
 | `.github/CODE_OF_CONDUCT.md`, `.github/CONTRIBUTING.md` | Community standards and contribution guidelines |
 | `docs/AI_AGENT_INSTRUCTIONS.md` | Detailed generation workflow and agent operating instructions |
 | `templates/PRD_TEMPLATE.md`, `templates/SPEC_TEMPLATE.md`, `templates/README_TEMPLATE.md` | Source templates copied to the generated repo root |
+| `config/ci_contract.yaml` | CI contract: GitHub owner, `shared-workflows` tag, caller inputs, runner labels, tool versions, bundle names (generation-only) |
+| `templates/workload/.github/workflows/` | Thin caller workflows rendered into every generated repo |
+| `templates/shared-workflows/` | The reusable workflows, self-test and docs, emitted once to the `shared-workflows` repo |
+| `templates/suite-tools/` | `run_benchmark_suite.sh` and `get_remote_info.sh`, emitted to the `gpu-bench-suite` repo |
 | `docs/` | Phase-by-phase generation workflow and machine-checkable contracts |
 | `schemas/` | JSON Schemas that generated artifacts must validate against |
 | `scripts/` | Generation, validation, and smoke-check tooling |

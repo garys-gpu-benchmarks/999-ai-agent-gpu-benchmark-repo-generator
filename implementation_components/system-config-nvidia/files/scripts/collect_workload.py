@@ -139,7 +139,8 @@ def main() -> int:
     parser.add_argument("--output-format", default="csv")
     args = parser.parse_args()
     sweep = (yaml.safe_load(Path(args.config).read_text(encoding="utf-8")) or {}).get("sweep") or {}
-    expected_kernel = str(pv(sweep, "kernel_version", args.profile, "6.8.0"))
+    # Read for the record; not compared yet (kernel/runtime checks live elsewhere).
+    _expected_kernel = str(pv(sweep, "kernel_version", args.profile, "6.8.0"))
     expected_driver = str(pv(sweep, "nvidia_driver_version", args.profile, sweep.get("driver_version", "580")))
     expected_cuda = str(pv(sweep, "cuda_version", args.profile, "12.6"))
     packages = [item.strip() for item in str(pv(sweep, "required_packages", args.profile, "nvidia-smi")).split(",") if item.strip()]

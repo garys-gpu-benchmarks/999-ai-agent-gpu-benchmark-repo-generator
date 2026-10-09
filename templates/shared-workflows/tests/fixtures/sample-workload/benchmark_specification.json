@@ -1,0 +1,42 @@
+[
+  {
+    "field_name": "Workload Number",
+    "source_file": "sample-workload fixture",
+    "value": "900"
+  },
+  {
+    "field_name": "Workload Name",
+    "source_file": "sample-workload fixture",
+    "value": "Sample Workload (shared-workflows self-test)"
+  },
+  {
+    "field_name": "GPU Vendor",
+    "source_file": "sample-workload fixture",
+    "value": "AMD"
+  },
+  {
+    "field_name": "Repo Name",
+    "source_file": "sample-workload fixture",
+    "value": "sys-bench-amd-sample-workload-ubu2404"
+  },
+  {
+    "field_name": "Execution Domain",
+    "source_file": "sample-workload fixture",
+    "value": "Validation / Correctness"
+  },
+  {
+    "field_name": "Workload Type",
+    "source_file": "sample-workload fixture",
+    "value": "Test"
+  },
+  {
+    "field_name": "Metrics",
+    "source_file": "sample-workload fixture",
+    "value": "#1: Sample check count (sample_check_count)"
+  },
+  {
+    "field_name": "OS Version",
+    "source_file": "sample-workload fixture",
+    "value": "Ubuntu 24.04"
+  }
+]

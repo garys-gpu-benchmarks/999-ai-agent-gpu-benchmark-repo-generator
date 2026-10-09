@@ -32,6 +32,7 @@ _hipcc_append_flag() {
       else
         printf -v "${varname}" '%s' "${flag}"
       fi
+      # shellcheck disable=SC2163  # varname holds the name of the variable to export
       export "${varname}"
       ;;
   esac

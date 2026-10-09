@@ -70,7 +70,7 @@ Keep only stable, shared inputs that apply across generated repositories:
 - `.gitignore`
 - `LICENSE`
 
-Generated-repo `nightly.yml` is the example under `docs/examples/generated-repo-workflows/`, not an active workflow in this template.
+Generated-repo workflows are rendered, not copied: `templates/workload/.github/workflows/{ci,gpu-smoke}.yml` plus `config/ci_contract.yaml` produce the two thin callers, and `templates/shared-workflows/` is emitted once by `scripts/emit_shared_workflows.py`. Neither is an active workflow in this template.
 
 `config/machines.yaml` may remain in the template only if it describes a shared execution target used by all generated workloads. If machine details vary by workload, generate it per workload instead.
 

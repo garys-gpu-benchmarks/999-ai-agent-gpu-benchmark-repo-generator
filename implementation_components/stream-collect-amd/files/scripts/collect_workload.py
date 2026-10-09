@@ -8,7 +8,6 @@ import os
 import shutil
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import yaml
@@ -64,7 +63,7 @@ def parse_args():
     parser.add_argument("--output-format", default="csv")
     return parser.parse_args()
 
-import re
+import re  # noqa: E402
 
 
 def main() -> int:

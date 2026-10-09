@@ -101,7 +101,7 @@
 - [ ] 3.12 `tests/fixtures/` directory exists with `.gitkeep` sentinel. No binary `benchmark.db` is committed — the fixture is generated on-the-fly by `--seed-fixture`.
 - [ ] 3.13 There is no `tests/fixtures/create_fixture_db.py` — `scripts/validate_results.py --seed-fixture` is the replacement.
 - [ ] 3.14 `results/raw/.gitkeep` and `results/parsed/.gitkeep` exist.
-- [ ] 3.15 `.github/workflows/ci.yml` and `.github/workflows/nightly.yml` exist.
+- [ ] 3.15 `.github/workflows/ci.yml` and `.github/workflows/gpu-smoke.yml` exist, are the only workflow files, and were rendered by `init_generated_repo.py` (no `nightly.yml`, no `.github/dependabot.yml`).
 - [ ] 3.16 `.gitignore` excludes `results/`, `.venv/`, `build/`, `tests/fixtures/benchmark.db`, secrets, and credentials.
 
 ### Script quality
@@ -326,14 +326,17 @@
            value and the configured threshold.
 
 ### CI workflows
-- [ ] 3.67 `ci.yml` runs on pull request, lints `.sh` files with shellcheck, lints `.py` files
-           with ruff or flake8, validates `benchmark_specification.json` is valid JSON, and runs
-           `.venv/bin/python scripts/validate_results.py --seed-fixture --quiet`.
-- [ ] 3.68 `nightly.yml` runs on a self-hosted runner, executes `run_benchmark.sh` with the default
-           sweep, runs `.venv/bin/python scripts/validate_results.py
-           --db results/benchmark.db`, and uploads
-           `results/parsed/` as an artifact.
-- [ ] 3.69 Neither workflow uses `continue-on-error: true` on the validation step.
+- [ ] 3.67 `ci.yml` runs on pull request and push, has `permissions: contents: read`, and its
+           only job calls `<owner>/shared-workflows/.github/workflows/ci.yml@<ref>` with the
+           workload's `vendor` and `os_label` (shellcheck, ruff, syntax, schema, structure,
+           seeded-fixture validation, and actionlint run there).
+- [ ] 3.68 `gpu-smoke.yml` triggers on `workflow_dispatch` only (never `pull_request`), has
+           `permissions: contents: read`, and its only job calls
+           `<owner>/shared-workflows/.github/workflows/gpu-smoke.yml@<ref>`, which runs
+           `run_benchmark.sh --profile <profile> --validate` on `[self-hosted, gpu, <vendor>, <os_label>]`
+           and uploads `results/summary.json`, `results/environment.json` and `results/parsed/`.
+- [ ] 3.69 No workflow uses `continue-on-error: true` or `|| true` on a lint or validation step.
+           `python3 scripts/ci_contract.py --check-callers <repo>` passes.
 
 ### Remote execution
 - [ ] 3.70 N/A for local-only template: no remote execution path exists in generated repository scripts.

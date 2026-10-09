@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # File: scripts/init_generated_repo.py
-# Version: 1.8.0
+# Version: 1.9.0
 # Maintainer: AI Agent GPU Benchmark Repo Generator
-# Date: 2026-07-25
+# Date: 2026-10-08
 # Description: Bootstraps required generated-repository scaffolding in template mode.
 # Execution: python3 scripts/init_generated_repo.py --repo-name <REPO_NAME> --template-root <TEMPLATE_ROOT> --repo-root <REPO_ROOT>
 # Options: --repo-name, --template-root, --repo-root, --force, --rocm-setup
@@ -25,6 +25,7 @@ from pathlib import Path
 
 from generated_repo_directory import generated_repo_directory_name
 from apply_component_gaps import apply_component_gaps
+from ci_contract import ContractError, render_workload_callers
 from materialize_generated_harness import materialize_generated_harness
 from resolve_implementation_components import (
     resolve_components,
@@ -89,7 +90,18 @@ COPY_EXCLUSIONS = [
     "scripts/refresh_remote_vm.sh",
     "scripts/lib/setup_rocm_full_28_20260628_REFERENCE.sh",
     "archive/setup_rocm_full_28_20260628_REFERENCE.sh",
+    # CI contract and suite-level emitters are generation-only; workloads get
+    # only the rendered thin callers in .github/workflows/.
+    "config/ci_contract.yaml",
+    "scripts/ci_contract.py",
+    "scripts/emit_shared_workflows.py",
 ]
+NO_BUILD_STEP_SH = """#!/usr/bin/env bash
+# This workload has no compile step. setup.sh calls this file; it does nothing.
+set -euo pipefail
+echo "[INFO] scripts/build.sh: no build step for this workload."
+"""
+
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".json", ".yaml", ".yml", ".txt", ".toml"}
 
 
@@ -130,7 +142,16 @@ def parse_args() -> argparse.Namespace:
 
 
 def _install_generated_repo_github_files(source_root: Path, repo_root: Path) -> None:
-    """Install workload-specific GitHub community files and safe CI workflows."""
+    """Install workload-specific GitHub community files and the thin CI callers.
+
+    The CI logic itself lives in the shared-workflows repository
+    (templates/shared-workflows, emitted once by emit_shared_workflows.py).
+    Each workload only gets two caller files rendered from
+    templates/workload/.github/workflows and config/ci_contract.yaml.
+    Dependabot is configured in shared-workflows only: the callers reference
+    nothing but the shared repository, and automatic pip upgrades would change
+    what a benchmark measures.
+    """
     github_examples = source_root / "docs" / "examples" / "generated-repo-github"
     github_dest = repo_root / ".github"
     if not github_examples.is_dir():
@@ -147,7 +168,6 @@ def _install_generated_repo_github_files(source_root: Path, repo_root: Path) -> 
         "ISSUE_TEMPLATE/feature_request.md": ".github/ISSUE_TEMPLATE/feature_request.md",
         "ISSUE_TEMPLATE/config.yml": ".github/ISSUE_TEMPLATE/config.yml",
         "GITHUB_PUBLISH_WORKLOAD_REPO.md": "docs/GITHUB_PUBLISH_WORKLOAD_REPO.md",
-        "dependabot.yml": ".github/dependabot.yml",
     }
     for src_name, dest_name in mappings.items():
         src = github_examples / src_name
@@ -155,15 +175,17 @@ def _install_generated_repo_github_files(source_root: Path, repo_root: Path) -> 
             raise SystemExit(f"[FAIL] Missing generated-repo GitHub source file: {src}")
         copy_path(src, repo_root / dest_name)
 
-    workflow_examples = source_root / "docs" / "examples" / "generated-repo-workflows"
-    workflow_dest = github_dest / "workflows"
-    workflow_dest.mkdir(parents=True, exist_ok=True)
-    for src_name, dest_name in {"ci.yml.example": "ci.yml", "nightly.yml.example": "nightly.yml"}.items():
-        src = workflow_examples / src_name
-        if not src.is_file():
-            raise SystemExit(f"[FAIL] Missing generated-repo workflow example: {src}")
-        copy_path(src, workflow_dest / dest_name)
-    print("[INFO] Installed workload-specific GitHub community files and workflows.")
+    spec_path = source_root / "benchmark_specification.json"
+    if not spec_path.is_file():
+        raise SystemExit(f"[FAIL] Cannot render CI callers without {spec_path}")
+    try:
+        identity = render_workload_callers(repo_root, _definition_fields(source_root), source_root)
+    except ContractError as exc:
+        raise SystemExit(f"[FAIL] CI contract: {exc}") from exc
+    print(
+        "[INFO] Installed workload-specific GitHub community files and CI callers "
+        f"(vendor={identity['vendor']}, os_label={identity['os_label']})."
+    )
 
 
 def copy_path(src: Path, dst: Path) -> None:
@@ -417,6 +439,12 @@ def main() -> int:
         if rel == "setup.sh":
             if not path.exists() or path.stat().st_size == 0:
                 raise SystemExit("[FAIL] setup.sh was not materialized from a setup skeleton.")
+            continue
+        if rel == "scripts/build.sh" and (not path.exists() or path.stat().st_size == 0):
+            # Workloads without a compile step still get a valid script, so
+            # setup.sh can call it and shellcheck/bash -n have something real.
+            path.write_text(NO_BUILD_STEP_SH, encoding="utf-8", newline="\n")
+            path.chmod(path.stat().st_mode | 0o111)
             continue
         if not path.exists():
             path.touch()

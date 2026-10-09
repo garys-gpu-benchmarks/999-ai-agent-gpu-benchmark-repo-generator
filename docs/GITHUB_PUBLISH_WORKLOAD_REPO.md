@@ -23,12 +23,11 @@ Before publishing the generator:
 - `.github/PULL_REQUEST_TEMPLATE.md`
 - `.github/ISSUE_TEMPLATE/`
 - `.github/copilot-instructions.md`
-- `.github/workflows/ci.yml`
-- `.github/workflows/nightly.yml`
+- `.github/workflows/ci.yml` and `.github/workflows/gpu-smoke.yml` (thin callers rendered from `config/ci_contract.yaml` and `templates/workload/.github/workflows/`)
 - `docs/GITHUB_PUBLISH_WORKLOAD_REPO.md` (workload-specific publication instructions)
 - `scripts/check_github_publish_ready.sh`
 
-The generated `ci.yml` performs host-safe checks only and does not install GPU stacks or execute the benchmark. The optional GPU workflow targets a self-hosted runner labeled `gpu` and is manual-only by default; scheduling is an explicit repository-owner opt-in.
+Both callers run the reusable workflows in the `shared-workflows` repository at the contract's major tag (`@v1`). `ci.yml` performs host-safe checks only and does not install GPU stacks or execute the benchmark. `gpu-smoke.yml` targets a self-hosted runner labeled `gpu`, the vendor and the OS, and is manual-only (`workflow_dispatch`); it is never triggered by pull requests. Publish and tag `shared-workflows` (see `scripts/emit_shared_workflows.py` and the README section "Continuous Integration") before the first workload is pushed. Workloads do not get `.github/dependabot.yml`; Dependabot runs in `shared-workflows`.
 
 A completed workload must pass generation-time:
 

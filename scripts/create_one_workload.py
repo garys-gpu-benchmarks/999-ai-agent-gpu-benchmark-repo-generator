@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from generated_repo_directory import find_generated_repo, generated_repo_directory_name
-from host_exec import normalize_ssh_command, run_host_bash
+from host_exec import normalize_remote_root, normalize_ssh_command, run_host_bash
 from framework_registry import resolve_flags
 from platform_policy import match_policy
 from remove_template_copy import remove_template_copy
@@ -539,7 +539,7 @@ def main() -> int:
     global REMOTE_ROOT
     _configure_stdio()
     args = parse_args()
-    REMOTE_ROOT = args.remote_root.rstrip("/") or REMOTE_ROOT
+    REMOTE_ROOT = normalize_remote_root(args.remote_root)
     template_root = Path(args.template_root).resolve()
     project_root = Path(args.project_root).resolve() if args.project_root else template_root.parent
     prompt = Path(args.prompt_file).resolve()

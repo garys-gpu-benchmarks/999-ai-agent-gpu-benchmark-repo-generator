@@ -1,8 +1,8 @@
 name: Template CI
 
 # Validates this template repository itself — not a generated workload repo.
-# See docs/examples/generated-repo-workflows/ for CI meant to run inside
-# repositories produced by scripts/create_generated_repo.py.
+# Generated workloads get thin callers from templates/workload/.github/workflows/;
+# their CI logic lives in templates/shared-workflows/ (the shared-workflows repo).
 
 on:
   pull_request:
@@ -13,32 +13,60 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: template-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Install project and linters
         run: |
           sudo apt-get update
-          sudo apt-get install -y shellcheck
+          sudo apt-get install -y shellcheck ripgrep
           pip install --upgrade pip
           pip install -e "config[dev]"
 
       - name: Lint shell scripts
         run: |
-          find scripts -name "*.sh" -type f -print0 | xargs -0 shellcheck
+          find scripts templates -name "*.sh" -type f -not -path 'scripts/templates/*' -print0 \
+            | xargs -0 shellcheck --severity=warning
 
       - name: Lint Python scripts
         run: |
-          ruff check --config config/pyproject.toml scripts/*.py
+          ruff check --config config/pyproject.toml scripts implementation_components templates tests --exclude scripts/templates
+
+      - name: Unit tests
+        run: |
+          python -m pytest -q tests
+
+      - name: Render and lint the CI templates
+        run: |
+          python3 scripts/ci_contract.py --show
+          python3 scripts/emit_shared_workflows.py --output-root "${RUNNER_TEMP}/emit"
+          version="$(python3 -c 'import yaml; print(yaml.safe_load(open("config/ci_contract.yaml"))["tools"]["actionlint"])')"
+          curl -fsSL -o "${RUNNER_TEMP}/actionlint.tgz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${version}/actionlint_${version}_linux_amd64.tar.gz"
+          tar -xzf "${RUNNER_TEMP}/actionlint.tgz" -C "${RUNNER_TEMP}" actionlint
+          cd "${RUNNER_TEMP}/emit/shared-workflows"
+          git init -q
+          "${RUNNER_TEMP}/actionlint" -color
+          "${RUNNER_TEMP}/actionlint" -color tests/fixtures/sample-workload/.github/workflows/*.yml
 
       - name: Validate JSON schemas
         run: |
@@ -106,6 +134,17 @@ jobs:
           test -f implementation_components/rccl-bandwidth-amd/component.json
           test -f implementation_components/linpack-rochpl-amd/component.json
           test -f docs/nvidia-sglang-install-contract.md
+          test -f config/ci_contract.yaml
+          test -f scripts/ci_contract.py
+          test -f scripts/emit_shared_workflows.py
+          test -f templates/workload/.github/workflows/ci.yml
+          test -f templates/workload/.github/workflows/gpu-smoke.yml
+          test -f templates/shared-workflows/.github/workflows/ci.yml
+          test -f templates/shared-workflows/.github/workflows/gpu-smoke.yml
+          test -f templates/shared-workflows/.github/workflows/self-test.yml
+          test -f templates/suite-tools/scripts/run_benchmark_suite.sh
+          test -f templates/suite-tools/scripts/get_remote_info.sh
+          test ! -f docs/examples/generated-repo-workflows/nightly.yml.example
           echo "✓ All required template files and directories present"
 
       - name: Check for leftover personal paths, secrets, or lock files
@@ -118,7 +157,12 @@ jobs:
             echo "✗ Found a personal SSH path — replace with a placeholder before merging." >&2
             exit 1
           fi
-          if grep -rEq --include="*.md" --include="*.sh" --include="*.py" --include="*.txt" --include="*.yml" "-----BEGIN OPENSSH PRIVATE KEY-----|129\\.212\\.180\\.31|205\\.196\\.17\\.122"; then
+          # -e keeps grep from reading the leading dashes as an option. This
+          # file and prompt_workflow.py (which lists the marker as a search
+          # pattern) are excluded so they do not match themselves.
+          if grep -rEq --include="*.md" --include="*.sh" --include="*.py" --include="*.txt" --include="*.yml" \
+               --exclude=ci.yml --exclude=prompt_workflow.py \
+               -e "-----BEGIN OPENSSH PRIVATE KEY-----|129\\.212\\.180\\.31|205\\.196\\.17\\.122" .; then
             echo "✗ Found a private key or a live lab IP — replace with a placeholder before merging." >&2
             exit 1
           fi

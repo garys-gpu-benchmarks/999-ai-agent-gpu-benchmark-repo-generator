@@ -4,11 +4,9 @@ from __future__ import annotations
 import argparse
 import csv
 import io
-import os
 import re
 import shutil
 import subprocess
-import sys
 import time
 from pathlib import Path
 

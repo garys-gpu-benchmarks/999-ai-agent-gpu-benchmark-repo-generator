@@ -1,6 +1,15 @@
-# Generated-Repo Workflow Examples
+# Generated-Repo Workflows (moved)
 
-These workflow sources are installed into every generated workload repository by `scripts/init_generated_repo.py`. They are not active in the generator repository because GitHub Actions only runs workflow files directly under `.github/workflows/`.
+Workflow files for generated workload repositories are no longer copied from
+this folder. Since TEMPLATE_00_103 they are rendered:
 
-- `ci.yml.example` becomes `.github/workflows/ci.yml`. It runs host-safe lint/schema/syntax checks and `scripts/check_github_publish_ready.sh` on `ubuntu-latest`. It does not install GPU stacks, run generation-time `self_check_generated_repo.sh`, or execute the benchmark.
-- `nightly.yml.example` becomes `.github/workflows/nightly.yml`. It targets a self-hosted runner labeled `gpu` and runs the smoke profile. Attach and review an appropriate GPU runner before enabling scheduled execution.
+- `templates/workload/.github/workflows/ci.yml` and `gpu-smoke.yml` — the two
+  thin callers that `scripts/init_generated_repo.py` renders into every
+  workload, using `config/ci_contract.yaml` and the workload's
+  `benchmark_specification.json` (vendor, OS label).
+- `templates/shared-workflows/` — the reusable workflows those callers run,
+  emitted once by `scripts/emit_shared_workflows.py` into the persistent
+  `shared-workflows` repository and released with tags (`v1.0.0`, `v1`).
+
+`ci.yml.example` and `nightly.yml.example` were removed. See the README section
+"Continuous Integration" and `templates/shared-workflows/README.md`.

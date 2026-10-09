@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # File: scripts/prepare_github_publish.sh
-# Version: 1.1.1
+# Version: 1.2.0
 # Maintainer: AI Agent GPU Benchmark Repo Generator
-# Date: 2026-08-29
+# Date: 2026-10-08
 # Description: Final cleanup of a generated workload before independent GitHub publication.
 # Execution: bash scripts/prepare_github_publish.sh [--dry-run|--apply] [--in-place] [--git-init] [--github-owner=OWNER]
 # Options: --dry-run (default), --apply, --in-place, --git-init, --github-owner=OWNER
@@ -13,7 +13,7 @@
 # Repository: gpu-bench/sys-bench template
 # License: Apache-2.0
 #
-# Stages: prune leftovers, sanitize secrets/paths, normalize LF/gitignore/CI,
+# Stages: prune leftovers, sanitize secrets/paths, normalize LF/gitignore, check CI callers,
 # validate clone-safety, optionally git init. Does not commit or push.
 set -euo pipefail
 
@@ -35,7 +35,8 @@ Usage: bash scripts/prepare_github_publish.sh [--dry-run|--apply] [--in-place] [
 Run from a generated workload root. Default is --dry-run.
 
   --dry-run         Print what would be removed or patched. No writes.
-  --apply           Delete generator leftovers, normalize LF, patch clone-safe CI,
+  --apply           Delete generator leftovers (including superseded nightly.yml
+                    and dependabot.yml), normalize LF, check the CI callers,
                     tighten .gitignore, replace <org> clone URLs, and strip
                     known dangling doc links.
   --in-place        Required with --apply when a nested *_copy generation
@@ -142,6 +143,16 @@ SCRIPT_LEFTOVERS=(
   scripts/self_check_generated_repo.sh
   scripts/dir.txt
   scripts/templates/dir.txt
+  scripts/ci_contract.py
+  scripts/emit_shared_workflows.py
+)
+
+# Superseded CI files. GPU runs moved to the gpu-smoke.yml caller; Dependabot
+# lives in the shared-workflows repository; the CI contract is generation-only.
+CI_LEFTOVERS=(
+  .github/workflows/nightly.yml
+  .github/dependabot.yml
+  config/ci_contract.yaml
 )
 
 SCHEMA_LEFTOVERS=(
@@ -175,7 +186,7 @@ if [[ "${MODE}" == "apply" && "${IN_PLACE}" -eq 0 ]]; then
 fi
 
 info "Removing generator leftovers..."
-for rel in "${ROOT_LEFTOVERS[@]}" "${DOC_LEFTOVERS[@]}" "${SCRIPT_LEFTOVERS[@]}" "${SCHEMA_LEFTOVERS[@]}"; do
+for rel in "${ROOT_LEFTOVERS[@]}" "${DOC_LEFTOVERS[@]}" "${SCRIPT_LEFTOVERS[@]}" "${SCHEMA_LEFTOVERS[@]}" "${CI_LEFTOVERS[@]}"; do
   do_rm "${rel}"
 done
 for rel in "${DIR_LEFTOVERS[@]}"; do
@@ -313,66 +324,20 @@ else
   done
 fi
 
-info "Patching GitHub Actions CI to be clone-safe..."
-CI_FILE=".github/workflows/ci.yml"
-if [[ -f "${CI_FILE}" ]]; then
-  if [[ "${MODE}" == "apply" ]]; then
-    python3 - <<'PY'
-from pathlib import Path
-
-path = Path(".github/workflows/ci.yml")
-text = path.read_text(encoding="utf-8")
-old = "          test ! -d ai-agent-gpu-benchmark-repo-generator_copy\n          bash scripts/self_check_generated_repo.sh\n"
-new = (
-    "          test ! -d ai-agent-gpu-benchmark-repo-generator_copy\n"
-    "          test ! -f README_TEMPLATE.md\n"
-    "          test ! -f AGENTS.md\n"
-    "          test ! -f scripts/self_check_generated_repo.sh\n"
-    "          test ! -d .claude\n"
-    "          test -f scripts/prepare_github_publish.sh\n"
-)
-if old in text:
-    text = text.replace(old, new)
-else:
-    text = text.replace("          bash scripts/self_check_generated_repo.sh\n", "")
-
-dropped = []
-kept = []
-for line in text.splitlines(keepends=True):
-    if "generation_report.schema.json" in line or "generation-manifest" in line or "generation-schema" in line:
-        dropped.append(line.strip())
-        continue
-    kept.append(line)
-text = "".join(kept)
-if dropped:
-    print("[INFO] removed generation-only schema checks from .github/workflows/ci.yml")
-
-if "bash -n setup.sh" not in text:
-    extra = (
-        "      - name: Host-safe syntax checks\n"
-        "        run: |\n"
-        "          bash -n setup.sh\n"
-        "          bash -n run_benchmark.sh\n"
-        "          python3 -m compileall -q scripts\n"
-        "          bash run_benchmark.sh --help >/dev/null\n"
-        "\n"
-    )
-    marker = "      - name: GitHub publication readiness\n"
-    if marker in text:
-        text = text.replace(marker, extra + marker)
-        print("[INFO] added host-safe syntax checks to .github/workflows/ci.yml")
-
-path.write_text(text, encoding="utf-8", newline="\n")
-print("[INFO] patched .github/workflows/ci.yml for a public clone")
-PY
+info "Checking GitHub Actions callers..."
+# The CI workflows are thin callers of the shared-workflows repository,
+# rendered by init_generated_repo.py from config/ci_contract.yaml. This script
+# no longer rewrites them; it only removes superseded files (above) and checks.
+for wf in ci gpu-smoke; do
+  path=".github/workflows/${wf}.yml"
+  if [[ ! -f "${path}" ]]; then
+    err "${path} is missing; regenerate the workload with the current generator"
+  elif grep -Eq "^[[:space:]]+uses:[[:space:]]+[A-Za-z0-9_.-]+/shared-workflows/\.github/workflows/${wf}\.yml@v[0-9]+[[:space:]]*$" "${path}"; then
+    pass "${path} calls shared-workflows"
   else
-    if grep -Fq 'bash scripts/self_check_generated_repo.sh' "${CI_FILE}"; then
-      warn "CI still runs scripts/self_check_generated_repo.sh; --apply will remove that"
-    else
-      pass "CI does not invoke generation-time self_check"
-    fi
+    err "${path} is not a shared-workflows caller; regenerate the workload with the current generator"
   fi
-fi
+done
 
 info "Rewriting clone URLs and stripping known dangling links..."
 if [[ "${MODE}" == "apply" ]]; then

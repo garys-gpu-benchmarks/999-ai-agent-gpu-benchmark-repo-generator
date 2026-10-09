@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-08 — TEMPLATE_00_103 shared, versioned CI
+
+- Workloads get two thin callers (`ci.yml`, `gpu-smoke.yml`) rendered from `config/ci_contract.yaml` and `templates/workload/`; the logic lives in `templates/shared-workflows/`, emitted once by `scripts/emit_shared_workflows.py` and tagged `v1`. `nightly.yml` and per-workload Dependabot are gone. Full notes in the root `CHANGELOG.md`.
+
 ## 2026-09-25 — TEMPLATE_00_87 official create contracts and metrics D1–D4
 
 - Local directory and GitHub repository name are `<Workload Number>-<Repo Name>`. Workbook `Repo Name` stays unprefixed.

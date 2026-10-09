@@ -10,7 +10,6 @@
 # without running a kernel. No GPU or nvcc is needed for these tests.
 from __future__ import annotations
 
-import os
 import re
 import stat
 import subprocess

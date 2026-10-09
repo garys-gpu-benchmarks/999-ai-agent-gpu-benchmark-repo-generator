@@ -277,7 +277,7 @@ write_commands_section() {
         echo "$SEP"
         echo "DESCRIPTION : Commands To Be Run # Description"
         echo "$SUBSEP"
-        while IFS=$'\t' read -r seq vendor row_domain cmd_b64 desc_b64; do
+        while IFS=$'\t' read -r _seq vendor row_domain cmd_b64 desc_b64; do
             [[ "$row_domain" == "$domain" ]] || continue
             vendor_applies "$vendor" || continue
             cmd="$(b64decode "$cmd_b64")"
@@ -368,7 +368,7 @@ write_error_header
 write_commands_section "hardware" "$HARDWARE_FILE"
 write_commands_section "software" "$SOFTWARE_FILE"
 
-while IFS=$'\t' read -r seq vendor domain cmd_b64 desc_b64; do
+while IFS=$'\t' read -r _seq vendor domain cmd_b64 desc_b64; do
     vendor_applies "$vendor" || continue
     cmd="$(b64decode "$cmd_b64")"
     desc="$(b64decode "$desc_b64")"

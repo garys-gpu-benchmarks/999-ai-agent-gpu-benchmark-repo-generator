@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # File: scripts/check_github_publish_ready.sh
-# Version: 1.1.1
+# Version: 1.2.0
 # Maintainer: AI Agent GPU Benchmark Repo Generator
-# Date: 2026-08-29
+# Date: 2026-10-08
 # Description: Validate that a generated workload is ready for independent GitHub publication.
 # Execution: bash scripts/check_github_publish_ready.sh [--generation|--published]
 # Requirements: Bash, grep, find, python3
@@ -110,8 +110,7 @@ required=(
   .github/ISSUE_TEMPLATE/feature_request.md
   .github/ISSUE_TEMPLATE/config.yml
   .github/workflows/ci.yml
-  .github/workflows/nightly.yml
-  .github/dependabot.yml
+  .github/workflows/gpu-smoke.yml
   docs/GITHUB_PUBLISH_WORKLOAD_REPO.md
   scripts/prepare_github_publish.sh
 )
@@ -123,6 +122,40 @@ for path in "${required[@]}"; do
     err "Missing or empty required publish file: $path"
   fi
 done
+
+# CI callers: two thin files that call the shared-workflows repository.
+# The steps live there (templates/shared-workflows in the generator).
+ci_callers_ok=1
+for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
+  [[ -e "${wf}" ]] || continue
+  case "${wf##*/}" in
+    ci.yml|gpu-smoke.yml) ;;
+    *) err "Unexpected workflow ${wf}; workloads carry only ci.yml and gpu-smoke.yml"; ci_callers_ok=0 ;;
+  esac
+done
+for wf in ci gpu-smoke; do
+  path=".github/workflows/${wf}.yml"
+  [[ -f "${path}" ]] || continue
+  if ! grep -Eq "^[[:space:]]+uses:[[:space:]]+[A-Za-z0-9_.-]+/shared-workflows/\.github/workflows/${wf}\.yml@v[0-9]+[[:space:]]*$" "${path}"; then
+    err "${path} must call <owner>/shared-workflows/.github/workflows/${wf}.yml@v<N>"
+    ci_callers_ok=0
+  fi
+  if ! grep -Eq '^permissions:' "${path}"; then
+    err "${path} has no top-level permissions block"
+    ci_callers_ok=0
+  fi
+  if grep -Eq '^[[:space:]]+run:' "${path}"; then
+    err "${path} has its own run: steps; CI logic belongs in shared-workflows"
+    ci_callers_ok=0
+  fi
+done
+if [[ -f .github/workflows/gpu-smoke.yml ]] && grep -Eq '^[[:space:]]+pull_request(_target)?:' .github/workflows/gpu-smoke.yml; then
+  err ".github/workflows/gpu-smoke.yml must never trigger on pull requests (fork code would reach the GPU runner)"
+  ci_callers_ok=0
+fi
+if [[ "${ci_callers_ok}" -eq 1 ]]; then
+  pass "CI callers point at shared-workflows; GPU workflow is manual-only"
+fi
 
 if [[ -f README.md ]]; then
   if grep -Eq '\[\[GENERATE:|\{\{[^}]+\}\}|TODO|TBD: GENERATE' README.md; then

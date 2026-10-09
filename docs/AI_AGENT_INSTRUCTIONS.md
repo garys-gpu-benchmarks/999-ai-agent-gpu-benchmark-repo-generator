@@ -2,6 +2,38 @@
 
 You are generating one or more complete benchmark repositories from the current template workspace. The user prompt supplies one or more workload numbers and may optionally supply a legacy repository directory and a remote VM login command. If the remote login command contains an IPv4 address, remote validation is mandatory: after each local repository is created, load that repository onto the specified VM, install it there, and run it there before marking the workload complete. The remote VM is an external generation-time validation host only; it never changes the local output location, and no SSH/runtime path is written into the generated repository. The user does not copy this instruction file or create a fixed-name prompt file manually.
 
+## Minimal operator prompt
+
+The chat only needs to name the workloads and, when a VM should run them, the SSH login. Do not ask the user to repeat the defaults below. `through`, `to`, and `-` are inclusive: `101 through 132` means 101, 102, … 132. A trailing word such as `inclusive` is ignored.
+
+When the Cursor workspace is the parent of this generator:
+
+```text
+@ai-agent-gpu-benchmark-repo-generator/docs/AI_AGENT_INSTRUCTIONS.md
+Generate workloads 101 through 132.
+Remotely access Ubuntu VM with `ssh -i /path/to/.ssh/<amd_ssh_key> root@<REMOTE_HOST_IP>`
+```
+
+When the Cursor workspace is this generator folder, attach `@docs/AI_AGENT_INSTRUCTIONS.md` instead. The `Generate` line and the SSH line stay the same. Replace the key path and the IPv4 address with the real login. Placeholders do not select a VM. The same three lines work for another range or host by changing only those two facts. An `ssh` command may also include `-p <port>`.
+
+Save that chat text as the submitted-prompt artifact, then run this from the generator directory. This is the only generation action. Do not pass `--remote-root`, `--project-root`, or `--template-root`, and do not reimplement copy, setup, or smoke:
+
+```bash
+python3 scripts/run_from_prompt.py --prompt-file <SUBMITTED_PROMPT_FILE>
+```
+
+`scripts/run_from_prompt.py` resolves the template from its own file location, writes each repository in the parent of this generator, and calls `scripts/create_one_workload.py` for the whole list in order. Repositories are created in that parent even when Cursor's open folder is this generator.
+
+Defaults when the prompt omits them:
+
+- This generator tree is the only template. Do not read or copy any other `TEMPLATE_*` directory.
+- No `Legacy:` line means legacy mode is off. A `Legacy:` line is not read by `run_from_prompt.py`.
+- Do not refresh the VM unless the prompt explicitly confirms a refresh.
+- Install, develop, and run only under `/opt/benchmarks/<Workload Number>-<Repo Name>`. Never `/root` or `/opt/workloads`.
+- Every `run_benchmark.sh` invocation appends to `/var/opt/benchmarks/runtime_ledger.csv`.
+- An SSH command with an IPv4 address makes remote setup and smoke mandatory for every requested workload. Debug a remote failure on that VM inside `/opt/benchmarks/<repo>`, fix the local sibling, and recheck with `create_one_workload.py --validate-only`.
+- Continue until every requested workload is recorded. Do not stop after the first success.
+
 At the beginning of generation, record the current UTC timestamp as `generation_started_at`. At the end, after all implementation, validation, and checklist gates pass, record `generation_finished_at` and calculate the wall-clock `generation_duration_seconds`. Do not report completion until those values are written to both `results/generation_manifest.json` and `GENERATION_REPORT.md`.
 
 ## Inputs and path discovery
@@ -77,15 +109,13 @@ Imperative rules:
 
 1. Save **one** submitted-prompt artifact that lists every requested workload (`AI_AGENT_PROMPT_SUBMITTED_<WORKLOADS>_<UTC_TIMESTAMP>.md`).
 2. Initialize or update `<project-root>/batch_generation_manifest.json` with `requested_workloads` for the full list. Append or update each repository entry **after that workload finishes** (pass, fail, abandon, or timeout). Do not wait until the end of the batch to write the first entry. Leave batch `generation_finished_at` and `generation_duration_seconds` **null** until every requested workload is recorded. Do not stamp a batch finish time after the first workload.
-3. For each workload, call the official driver (it invokes `create_generated_repo.py`, then remote-validates and records). Do not reinvent copy/setup/smoke helpers:
+3. Call the chatbox entry point once for the full list. It invokes `create_one_workload.py`, which creates, remote-validates, and records one workload at a time. Do not reinvent copy/setup/smoke helpers, and do not pass `--remote-root`:
 
    ```bash
-   python3 scripts/create_one_workload.py \
-     --prompt-file <SUBMITTED_PROMPT_FILE> \
-     --workload <WORKLOAD_NUMBER>
+   python3 scripts/run_from_prompt.py --prompt-file <SUBMITTED_PROMPT_FILE>
    ```
 
-   `create_one_workload.py` catches per-workload failures as `Exception`/`RuntimeError` (not `SystemExit`) and records `failed` before continuing. Pass additional `--workload` flags for a sequential list.
+   `create_one_workload.py` catches per-workload failures as `Exception`/`RuntimeError` (not `SystemExit`) and records `failed` before continuing. Do not call it with a separate `--workload` list unless retrying with `--validate-only`.
 
 4. **Do not** call `scripts/create_generated_batch.py` from the AI Coding Agent chatbox path. That script scaffolds many repositories too early and violates this contract. Do not write throwaway `_process_one.py` helpers.
 5. **Do not** create the next workload's directory, template copy, or scaffolding until the current workload is finished under the completion rules below.
@@ -105,7 +135,7 @@ Create the generated repository at:
 <project-root>/<Workload Number>-<Repo Name>/
 ```
 
-The AI Coding Agent (ie, Cursor) project-root sibling is the created repository only. The source template directory is `ai-agent-gpu-benchmark-repo-generator`. Project root is that directory's parent. Each created repository is a sibling of `ai-agent-gpu-benchmark-repo-generator`, never inside it, never next to `TEMPLATE_*` when that folder only wraps the generator, never `/root`, never a VM home, and never a `DIRECTORIES/` or results-only staging folder. Do not pass `--project-root /root` (or any remote home) to `create_generated_repo.py`. If generation-host preflight fails on Windows (missing PyYAML or `rg`), install the missing host tools or still create the local sibling first; do not relocate output to the validation VM.
+The AI Coding Agent (ie, Cursor) project-root sibling is the created repository only. The source template directory is `ai-agent-gpu-benchmark-repo-generator`. Project root is that directory's parent, including when the parent is named `TEMPLATE_00_103` and when Cursor's open folder is the generator itself. Each created repository is a sibling of `ai-agent-gpu-benchmark-repo-generator` in that parent. `/root`, a VM home, a `DIRECTORIES/` folder, and a results-only staging folder are not the project root. Do not pass `--project-root /root` (or any remote home) to `create_generated_repo.py`. If generation-host preflight fails on Windows (missing PyYAML or `rg`), install the missing host tools or still create the local sibling first; do not relocate output to the validation VM.
 
 The created repository is the files written by `create_generated_repo.py` and Phases 1–4 (`setup.sh`, `run_benchmark.sh`, `config/`, `scripts/`, `src/`, overlays, docs, `benchmark_specification.json`, `results/generation_manifest.json`, and, until the workload passes, the nested `*_copy/` generation workspace). Validation-host runtime state must not appear in that project-root sibling. `setup.sh` and smoke may create the following on the Ubuntu VM only; delete them from the project-root tree before recording `passed` if they were created there:
 

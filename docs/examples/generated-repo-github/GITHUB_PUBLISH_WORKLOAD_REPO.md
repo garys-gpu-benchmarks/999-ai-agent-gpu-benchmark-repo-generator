@@ -14,7 +14,7 @@ bash scripts/prepare_github_publish.sh --apply --in-place --github-owner=YOUR_GI
 bash scripts/check_github_publish_ready.sh --published
 ```
 
-`prepare_github_publish.sh` removes generator leftovers (nested copies, template-only docs, generation-only scripts and schemas), converts CRLF to LF, replaces `<org>` clone URLs, and makes GitHub Actions clone-safe. It does not commit or push.
+`prepare_github_publish.sh` removes generator leftovers (nested copies, template-only docs, generation-only scripts and schemas), converts CRLF to LF, replaces `<org>` clone URLs, and removes superseded workflow files. It does not commit or push.
 
 A finished workload normally no longer contains the nested `*_copy` generation workspace (it is removed once the workload passes). `--apply` refuses to run whenever a nested `*_copy` generation workspace (for example `ai-agent-gpu-benchmark-repo-generator_copy` or `TEMPLATE_00_*_copy`) is present in the current directory — copying the workload elsewhere does **not** remove it, since a plain `cp -a` copies that nested folder too. Pass `--in-place` so `--apply` can delete it. This is safe once you are standing in the publish-tree copy (that is the point of copying first); do not pass `--in-place` while standing in your only generation copy, since it permanently deletes that nested workspace there.
 
@@ -42,8 +42,12 @@ Before committing, review `git status` carefully. The nested `TEMPLATE_*_copy/` 
 
 ## GitHub Actions
 
-- `.github/workflows/ci.yml` performs host-safe linting, schema validation, structural validation, and publication-readiness checks on GitHub-hosted runners. It does not install GPU software or execute the benchmark.
-- `.github/workflows/nightly.yml` is intended for a self-hosted runner labeled `gpu`. It is manual-only by default; add a schedule only after attaching an appropriate GPU runner and reviewing workload costs/dependencies.
+Both workflow files are short callers stamped by the generator. The steps live once, for the whole suite, in the `shared-workflows` repository, pinned at a major tag (`@v1`).
+
+- `.github/workflows/ci.yml` runs on every pull request and push to `main`, on a GitHub-hosted runner: shellcheck, ruff, `bash -n`, `compileall`, `run_benchmark.sh --help`, specification schema, the results validator on a seeded fixture, required files, and actionlint. It never installs GPU software or runs the benchmark.
+- `.github/workflows/gpu-smoke.yml` runs only when started by hand (**Actions → GPU Smoke Benchmark → Run workflow**). It targets a self-hosted runner labeled `gpu`, the vendor (`amd` / `nvidia`) and the OS (`ubu2404` / `ubu2604`), verifies the pre-provisioned GPU stack, records `results/environment.json`, runs the chosen profile with `--validate`, and uploads the results. It is never triggered by pull requests, so code from a fork cannot reach the GPU host.
+
+Do not edit these two files by hand; change `config/ci_contract.yaml` or the templates in the generator and regenerate.
 
 ## Required legal files
 

@@ -366,6 +366,30 @@ def _kernel_display(fields: dict[str, str]) -> str:
     return ""
 
 
+def ci_fields(fields: dict[str, str]) -> dict[str, str]:
+    """README tokens derived from config/ci_contract.yaml ({{CI Owner}}, {{CI Bundle Repo}}, ...)."""
+    try:
+        from ci_contract import ContractError, load_contract, workload_identity
+    except ImportError:  # generated workload copy: the contract is generation-only
+        return {}
+    try:
+        contract = load_contract()
+        identity = workload_identity(fields, contract)
+    except ContractError as exc:
+        raise SystemExit(f"[FAIL] CI contract: {exc}") from exc
+    return {
+        "CI Owner": str(contract["github"]["owner"]),
+        "CI GitHub Slug": identity["slug"],
+        "CI Vendor": identity["vendor"],
+        "CI OS Label": identity["os_label"],
+        "CI OS Display": identity["os_display"],
+        "CI Bundle Repo": identity["bundle"],
+        "CI Shared Workflows Repo": str(contract["shared_workflows"]["repo"]),
+        "CI Shared Workflows Ref": str(contract["shared_workflows"]["ref"]),
+        "CI Install Root": str(contract["suite"]["install_root"]),
+    }
+
+
 def render_template(template_text: str, fields: dict[str, str]) -> str:
     text = HTML_COMMENT_RE.sub("", template_text)
 
@@ -425,6 +449,7 @@ def fill_generated_docs(repo_root: Path, template_root: Path | None = None) -> i
     if not spec.is_file():
         raise SystemExit(f"[FAIL] missing {spec}")
     fields = load_fields(spec)
+    fields.update(ci_fields(fields))
     template_dir = Path(template_root).resolve() if template_root else None
     if template_dir is None:
         for candidate in (repo / "templates", Path(__file__).resolve().parents[1] / "templates"):
