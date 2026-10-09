@@ -74,7 +74,7 @@ jobs:
           if [[ "${VENDOR}" == "amd" ]]; then
             command -v rocminfo >/dev/null || { echo "::error::rocminfo not found; provision ROCm on this runner first"; exit 1; }
             rocminfo | grep -m1 -E 'Name:[[:space:]]+gfx' || { echo "::error::rocminfo lists no gfx GPU agent"; exit 1; }
-            command -v rocm-smi >/dev/null && rocm-smi --showproductname || true
+            if command -v rocm-smi >/dev/null; then rocm-smi --showproductname || true; fi
           else
             command -v nvidia-smi >/dev/null || { echo "::error::nvidia-smi not found; provision the NVIDIA driver on this runner first"; exit 1; }
             nvidia-smi -L

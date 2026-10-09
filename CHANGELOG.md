@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-09 — shared-workflows Self-test: actionlint SC2015 in gpu-smoke.yml
+
+- **Failure:** the first publish of `shared-workflows` (commit 1e190b7, Self-test run 37946198959) failed in "lint reusable workflows". actionlint runs every `run:` script through the runner's shellcheck, and Ubuntu runner shellcheck 0.9/0.10 reports `command -v rocm-smi >/dev/null && rocm-smi --showproductname || true` in the "Verify pre-provisioned GPU stack" step as SC2015 ("A && B || C is not if-then-else"). actionlint fails on any finding, so v1 was not moved and no workload was pushed. shellcheck 0.11 no longer reports it, which is why it passed on a newer local install.
+- **`templates/shared-workflows/.github/workflows/gpu-smoke.yml`:** now `if command -v rocm-smi >/dev/null; then rocm-smi --showproductname || true; fi`. Same behavior: print the product name when rocm-smi exists, never fail on it.
+- **Checked:** actionlint 1.7.12 on the published tree with this line changed passes with shellcheck 0.9.0, 0.10.0 and 0.11.0 (0.9.0 and 0.10.0 reproduce the failure without it).
+
 ## 2026-10-08 — TEMPLATE_00_103: one shared, versioned CI for every workload
 
 Workloads no longer carry their own CI logic. Already generated repositories are unchanged until they are regenerated.
