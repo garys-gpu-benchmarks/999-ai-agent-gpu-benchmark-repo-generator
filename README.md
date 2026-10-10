@@ -1,4 +1,4 @@
-[![Template CI](https://github.com/garys-gpu-benchmarks/999-ai-agent-gpu-benchmark-repo-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/garys-gpu-benchmarks/999-ai-agent-gpu-benchmark-repo-generator/actions/workflows/ci.yml)
+[![Template CI](https://github.com/garys-gpu-benchmarks/ai-agent-gpu-benchmark-repo-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/garys-gpu-benchmarks/ai-agent-gpu-benchmark-repo-generator/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 # AI Coding Agent Spec-Driven GPU Benchmark Repo Generator
@@ -82,7 +82,7 @@ Steps to generate your first benchmark repository:
 3. **Clone the repository generator into project root directory**:
 
    ```text
-   git clone https://github.com/garys-gpu-benchmarks/999-ai-agent-gpu-benchmark-repo-generator.git ai-agent-gpu-benchmark-repo-generator
+   git clone https://github.com/garys-gpu-benchmarks/ai-agent-gpu-benchmark-repo-generator.git ai-agent-gpu-benchmark-repo-generator
    cd ai-agent-gpu-benchmark-repo-generator
    ```
 
@@ -192,55 +192,43 @@ config/ci_contract.yaml ──► templates/workload/.github/workflows/   ──
 
 ### Commands
 
-All paths below assume this layout (the persistent repositories sit next to the publish script, never inside a dated take folder):
+Publishing is done by `publish_benchmarks_to_github.sh` (kept outside this repository). One folder per publish run:
 
 ```text
-Github_Garys_GPU_Repos/Repos_To_Github/
-├── publish_benchmarks_to_github.sh
-├── shared-workflows/            # emitted once by scripts/emit_shared_workflows.py, then tagged
-├── gpu-bench-suite/             # emitted by scripts/emit_shared_workflows.py
-└── 20261006a_Project332etc_take5/   # one take: the 128 workloads + 999-ai-agent-gpu-benchmark-repo-generator
+Z:\ServersProcessorsMemoryEtc\Github_Garys_GPU_Repos\
+└── Publishing\
+    ├── publish_benchmarks_to_github.sh
+    └── Publish_20261009_01\
+        ├── SourceRepositories\                 # you fill: the 128 workloads + ai-agent-gpu-benchmark-repo-generator
+        ├── SourceRepositories_PubTree\         # created by the script (logs in _logs\)
+        ├── SourceRepositories_Bundles\         # created by the script
+        ├── shared-workflows\                   # built by the script from this generator
+        └── gpu-bench-suite\                    # built by the script from this generator
 ```
 
-**1. Emit the shared repositories** (from this generator folder):
+**1. Publish** (Git Bash; use `/` in paths):
 
 ```bash
-python3 scripts/ci_contract.py --show                                  # resolved owner, tag, tool versions
-python3 scripts/emit_shared_workflows.py --output-root <Repos_To_Github>            # first time
-python3 scripts/emit_shared_workflows.py --output-root <Repos_To_Github> --check    # what would change
-python3 scripts/emit_shared_workflows.py --output-root <Repos_To_Github> --update   # refresh; keeps .git and tags
+cd /z/ServersProcessorsMemoryEtc/Github_Garys_GPU_Repos/Publishing
+mkdir -p Publish_20261009_01/SourceRepositories
+# copy the 128 workloads and ai-agent-gpu-benchmark-repo-generator into it
+./publish_benchmarks_to_github.sh Publish_20261009_01/SourceRepositories
 ```
 
-(`<Repos_To_Github>` is the folder that holds `publish_benchmarks_to_github.sh`.)
+The script builds `shared-workflows` and `gpu-bench-suite` with `scripts/emit_shared_workflows.py` from the generator copy in the run folder, publishes `shared-workflows` first (after its Self-test passes it tags the next `v1.x.0` and moves `v1`), then the workloads, the four bundles and this generator. If it stops, fix the problem and run the same command again; finished work is skipped.
 
-**2. Publish `shared-workflows` and tag it — before any workload is pushed**, because each workload's first push runs CI through `@v1`:
+**2. Preview the shared repositories** (optional, from this generator folder):
 
 ```bash
-cd Repos_To_Github/shared-workflows
-gh repo create garys-gpu-benchmarks/shared-workflows --public --description "Reusable CI for the GPU benchmark suite"
-git init -b main && git add -A && git commit -m "shared-workflows v1.0.0"
-git remote add origin https://github.com/garys-gpu-benchmarks/shared-workflows.git
-git push -u origin main                      # wait for the Self-test workflow to pass
-git tag v1.0.0 && git tag v1 v1.0.0 && git push origin v1.0.0 v1
+python3 scripts/ci_contract.py --show                                               # resolved owner, tag, tool versions
+python3 scripts/emit_shared_workflows.py --output-root <publish folder> --check      # what would change
 ```
 
-Publish `gpu-bench-suite` the same way (no tag needed).
+`<publish folder>` is the folder that holds `shared-workflows/`, for example `Publishing/Publish_20261009_01`.
 
-**3. Generate and publish the workloads** as before:
+**3. Change CI later**: edit `templates/shared-workflows/` (or `config/ci_contract.yaml`) here, then publish as in step 1. A compatible change needs no workload changes; the script releases it as the next `v1.x.0` and moves `v1`.
 
-```bash
-cd Repos_To_Github
-bash publish_benchmarks_to_github.sh 20261006a_Project332etc_take5
-```
-
-**4. Change CI later**: edit `templates/shared-workflows/` (or `config/ci_contract.yaml`), run step 1 with `--update`, commit and push `shared-workflows`, wait for its Self-test, then move the tag. A compatible change needs no workload changes:
-
-```bash
-git tag v1.1.0 && git push origin v1.1.0
-git tag -f v1 v1.1.0 && git push -f origin v1
-```
-
-A breaking change (renamed or removed input) is tagged `v2.0.0` / `v2`; set `shared_workflows.ref: v2` in `config/ci_contract.yaml` and regenerate the workloads.
+A breaking change (renamed or removed input) is released as `v2.0.0` / `v2`; set `shared_workflows.ref: v2` in `config/ci_contract.yaml` and regenerate the workloads.
 
 ### Self-hosted GPU runners
 

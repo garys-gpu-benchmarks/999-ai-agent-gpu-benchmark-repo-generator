@@ -10,7 +10,7 @@ Do **not** open a public issue for leaked credentials, SSH keys, hostnames, IP a
 
 Use GitHub's private advisory form:
 
-https://github.com/garymichaelbass/ai-agent-gpu-benchmark-repo-generator/security/advisories/new
+https://github.com/garys-gpu-benchmarks/ai-agent-gpu-benchmark-repo-generator/security/advisories/new
 
 Or contact the repository owner, Gary Bass (`garymichaelbass`), privately.
 

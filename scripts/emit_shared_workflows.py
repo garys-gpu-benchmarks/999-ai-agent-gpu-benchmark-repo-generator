@@ -7,8 +7,8 @@
 #   templates and config/ci_contract.yaml:
 #     <output-root>/shared-workflows/   reusable GitHub workflows (published once, tagged)
 #     <output-root>/gpu-bench-suite/    operator scripts (run_benchmark_suite.sh, get_remote_info.sh)
-#   These are NOT written into a disposable take folder; point --output-root
-#   at the folder that holds publish_benchmarks_to_github.sh (Repos_To_Github).
+#   publish_benchmarks_to_github.sh runs this with --output-root set to the
+#   publish folder that holds the run folder (Publishing/Publish_<YYYYMMDD>_<NN>).
 # Execution: python3 scripts/emit_shared_workflows.py --output-root <DIR> [--update] [--check]
 # Requirements: Python 3.10+, PyYAML
 # License: Apache-2.0
@@ -118,7 +118,7 @@ def sync(staged: Path, target: Path, apply: bool) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Emit shared-workflows and gpu-bench-suite from templates")
     parser.add_argument("--output-root", required=True,
-                        help="Persistent folder that holds the published repos (e.g. Repos_To_Github)")
+                        help="Folder that holds shared-workflows/ and gpu-bench-suite/ (e.g. Publishing/Publish_20261009_01)")
     parser.add_argument("--template-root", default="", help="Generator root (default: this checkout)")
     parser.add_argument("--only", choices=("shared-workflows", "suite-tools", "both"), default="both")
     mode = parser.add_mutually_exclusive_group()
@@ -131,7 +131,7 @@ def main() -> int:
     template_root = Path(args.template_root).resolve() if args.template_root else TEMPLATE_ROOT
     output_root = Path(args.output_root).resolve()
     if (output_root / "AGENTS.md").is_file() or output_root == template_root:
-        raise SystemExit("[FAIL] --output-root must be outside the generator (for example Repos_To_Github)")
+        raise SystemExit("[FAIL] --output-root must be outside the generator (for example Publishing/Publish_20261009_01)")
     try:
         contract = load_contract(template_root)
     except ContractError as exc:

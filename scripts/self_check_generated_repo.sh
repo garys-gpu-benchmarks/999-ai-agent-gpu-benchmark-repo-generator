@@ -706,14 +706,9 @@ if workload in {"131", "231", "331"} or "sglang-serving-latency" in repo:
     print("[PASS] 131/231/331 SGLang smoke-vs-real launch contract")
 if workload in {"127", "128", "129", "227", "228", "229", "327", "328", "329"}:
     runner = Path("run_benchmark.sh").read_text(encoding="utf-8", errors="replace")
-    has_tiny = "tiny_kv_server.py" in runner
-    has_real = "vllm.entrypoints.openai.api_server" in runner
-    if not has_tiny and not has_real:
-        raise SystemExit(
-            "[FAIL] 127-129/227-229/327-329 smoke must be able to start "
-            "scripts/tiny_kv_server.py or python -m vllm.entrypoints.openai.api_server."
-        )
-    if not has_real:
+    if "tiny_kv_server.py" not in runner:
+        raise SystemExit("[FAIL] 127-129/227-229/327-329 smoke must be able to start scripts/tiny_kv_server.py.")
+    if "vllm.entrypoints.openai.api_server" not in runner:
         raise SystemExit(
             "[FAIL] 127-129/227-229/327-329 baseline/extended must start "
             "python -m vllm.entrypoints.openai.api_server."

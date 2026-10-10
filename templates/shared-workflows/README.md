@@ -113,8 +113,10 @@ compatible release. This is the same convention GitHub's own actions use.
 ### Releasing a change
 
 ```bash
-# 1. Regenerate from the generator (writes this folder; keeps .git)
-python3 scripts/emit_shared_workflows.py --output-root <Repos_To_Github> --update
+# publish_benchmarks_to_github.sh does steps 1-3a for you. By hand:
+# 1. Regenerate from the generator (writes this folder; keeps .git).
+#    <publish folder> holds shared-workflows/, e.g. Publishing/Publish_20261009_01
+python3 scripts/emit_shared_workflows.py --output-root <publish folder> --update
 
 # 2. Commit, push, and wait for the Self-test workflow to pass
 git add -A && git commit -m "ci: <what changed>" && git push

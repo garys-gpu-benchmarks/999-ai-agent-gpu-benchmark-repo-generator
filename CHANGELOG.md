@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-10 — Generator repository renamed to ai-agent-gpu-benchmark-repo-generator; publishing folder layout
+
+- **GitHub:** `garys-gpu-benchmarks/999-ai-agent-gpu-benchmark-repo-generator` is now `garys-gpu-benchmarks/ai-agent-gpu-benchmark-repo-generator` (history, tags, Actions runs kept; GitHub redirects the old name). In a publish run folder the generator is copied as `ai-agent-gpu-benchmark-repo-generator` (no `999-` prefix).
+- **`README.md`:** CI badge and clone URL use the new name. "Commands" describes the current publishing layout (`Publishing/Publish_<YYYYMMDD>_<NN>/SourceRepositories`) and that `publish_benchmarks_to_github.sh` builds and releases `shared-workflows` and `gpu-bench-suite`; the old manual `Repos_To_Github` steps are removed.
+- **`templates/shared-workflows/README.md`:** "Releasing a change" uses `<publish folder>` and notes the publish script does it. This changes the shared-workflows repository, so the next publish releases `v1.1.0` and moves `v1` (after its Self-test).
+- **`scripts/emit_shared_workflows.py`:** comments and `--output-root` help text name the publish folder; behavior unchanged.
+- **`.github/SECURITY.md`, `.github/ISSUE_TEMPLATE/config.yml`:** private security reports go to the organization repository instead of `garymichaelbass/ai-agent-gpu-benchmark-repo-generator`.
+- **Outside this repository:** `publish_benchmarks_to_github.sh` expects `ai-agent-gpu-benchmark-repo-generator`, requires the run folder argument, stops with a rename hint if the run folder holds `999-ai-agent-gpu-benchmark-repo-generator`, and renames the GitHub repository from the old name if it still has it.
+
 ## 2026-10-10 — Template CI: junk-file check no longer trips on the unit tests' __pycache__
 
 - **Failure:** the generator's own "Template CI" (`.github/workflows/ci.yml`, job lint-and-validate) failed on every push (run #3, commit 56eb3dd, v1.0.7/v1.0.8) with "Process completed with exit code 1". Every step passed except the last: "Unit tests" runs `pytest`, which creates `__pycache__` folders on the runner, and "Check for leftover personal paths, secrets, or lock files" then ran `find . -name '__pycache__'` and failed on them. The repository has no committed `__pycache__` (`.gitignore` excludes it). Only the generator runs this check; the workloads use the shared ci.yml, which does not.
