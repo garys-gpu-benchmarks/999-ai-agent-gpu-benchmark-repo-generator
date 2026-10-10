@@ -166,8 +166,10 @@ jobs:
             echo "✗ Found a private key or a live lab IP — replace with a placeholder before merging." >&2
             exit 1
           fi
-          if find . -name '~$*' -o -name '__pycache__' | grep -q .; then
-            echo "✗ Found leftover Office lock files or __pycache__ — remove before merging." >&2
+          # Only committed files count: the Unit tests step above creates
+          # __pycache__ folders on the runner, which are not in the repository.
+          if git ls-files | grep -qE '(^|/)(__pycache__/|~\$)'; then
+            echo "✗ Found committed Office lock files or __pycache__ — remove before merging." >&2
             exit 1
           fi
           echo "✓ No leftover personal paths or junk files"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-10 — Template CI: junk-file check no longer trips on the unit tests' __pycache__
+
+- **Failure:** the generator's own "Template CI" (`.github/workflows/ci.yml`, job lint-and-validate) failed on every push (run #3, commit 56eb3dd, v1.0.7/v1.0.8) with "Process completed with exit code 1". Every step passed except the last: "Unit tests" runs `pytest`, which creates `__pycache__` folders on the runner, and "Check for leftover personal paths, secrets, or lock files" then ran `find . -name '__pycache__'` and failed on them. The repository has no committed `__pycache__` (`.gitignore` excludes it). Only the generator runs this check; the workloads use the shared ci.yml, which does not.
+- **Fix:** the check now looks at committed files only: `git ls-files | grep -qE '(^|/)(__pycache__/|~\$)'`. A committed `__pycache__` file or Office lock file (`~$...`) still fails the job.
+- **Checked:** on a clone of 56eb3dd after `pytest` (23 `__pycache__` folders on disk) the step passes; a force-added `__pycache__/a.pyc` and a `~$lock.xlsx` are both caught; actionlint 1.7.12 with shellcheck 0.9.0 passes. All other Template CI steps passed locally on that clone (135 tests).
+
 ## 2026-10-09 — shared-workflows Self-test: actionlint SC2015 in gpu-smoke.yml
 
 - **Failure:** the first publish of `shared-workflows` (commit 1e190b7, Self-test run 37946198959) failed in "lint reusable workflows". actionlint runs every `run:` script through the runner's shellcheck, and Ubuntu runner shellcheck 0.9/0.10 reports `command -v rocm-smi >/dev/null && rocm-smi --showproductname || true` in the "Verify pre-provisioned GPU stack" step as SC2015 ("A && B || C is not if-then-else"). actionlint fails on any finding, so v1 was not moved and no workload was pushed. shellcheck 0.11 no longer reports it, which is why it passed on a newer local install.
